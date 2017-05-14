@@ -1,14 +1,10 @@
 package ca.allanwang.snnake
 
-import javafx.beans.value.ChangeListener
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
-import javafx.scene.control.RadioButton
 import javafx.scene.control.ToggleGroup
 import javafx.scene.input.KeyCode
-import javafx.scene.input.KeyCombination
 import javafx.scene.layout.GridPane
-import javafx.scene.layout.Priority
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
@@ -94,7 +90,7 @@ class SnakeView : View("sNNake 2.0"), ViewContract {
                         addClass(SnakeStyle.center)
                         shortcut(KeyCode.SPACE.name)
                         action {
-                            text = controller.playPause()
+                            text = controller.playButton(text)
                         }
                     }
                 }

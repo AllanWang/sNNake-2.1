@@ -35,6 +35,13 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
     private var pendingDirection = id.initDirection
     private var keyEventHandler: EventHandler<KeyEvent>? = null
 
+
+    fun head() = positions.head
+
+    init {
+        positions.add(C(id.initX, id.initY))
+    }
+
     fun addKeyEventHandler() {
         if (keyEventHandler == null)
             keyEventHandler = EventHandler {
@@ -66,6 +73,7 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
     }
 
     fun step(stage: StepStage) {
+        if (dead) return
         when (stage) {
             StepStage.TAIL -> {
                 if (positions.size >= positions.maxSize())
@@ -73,11 +81,12 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
             }
             StepStage.HEAD -> {
                 prevDirection = pendingDirection
-                positions.head.set(map, MapData.SNAKE_BODY.bind(id)) // prev head is now body
+                head().set(map, MapData.SNAKE_BODY.bind(id)) // prev head is now body
+                println(String.format("Snake %d coords %s", id.ordinal, head()))
                 prevHeadValue = positions.move(pendingDirection).get(map)
                 val prevHeadMapData = MapData.get(prevHeadValue)
                 if (prevHeadMapData != MapData.SNAKE_BODY && prevHeadMapData != MapData.SNAKE_HEAD)
-                    positions.head.set(map, MapData.SNAKE_HEAD.bind(id)) // did not hit another snake; set head color
+                    head().set(map, MapData.SNAKE_HEAD.bind(id)) // did not hit another snake; set head color
             }
             StepStage.STATUS -> {
                 gameContract.sendSnakeStatus(id, prevHeadValue)
@@ -86,6 +95,7 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
     }
 
     fun terminate() {
+        println(String.format("Snake %d died", id.ordinal))
         dead = true
         positions.clear()
         removeKeyEventHandler()

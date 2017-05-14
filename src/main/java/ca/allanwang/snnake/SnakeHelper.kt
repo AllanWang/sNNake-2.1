@@ -11,6 +11,10 @@ const val gameHeight: Int = 20
 const val gameWidth: Int = 40
 const val blockSize = 20.0
 const val snakeDefaultSize: Int = 3
+const val playerCount = 2
+const val cpuCount = 0
+
+val snakeCount = playerCount + cpuCount
 val initOffset: Int = Math.min(gameHeight / 5, gameWidth / 5)
 
 enum class Directions {
@@ -41,12 +45,12 @@ enum class Directions {
 
 //maximum of 9 values; snake id (if it exists) will by multiplied by 10 and added to the ordinal
 enum class MapData {
-    INVALID {
+    EMPTY {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = SnakeStyle.background
         }
     },
-    EMPTY {
+    INVALID {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = SnakeStyle.background
         }
