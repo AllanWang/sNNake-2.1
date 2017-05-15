@@ -5,7 +5,11 @@ import javafx.animation.KeyFrame
 import javafx.animation.Timeline
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
+import javafx.scene.Node
+import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
+import javafx.scene.layout.GridPane
+import javafx.scene.shape.Rectangle
 import javafx.util.Duration
 import tornadofx.*
 
@@ -19,9 +23,9 @@ import tornadofx.*
  */
 interface SnakeGameContract {
 
-    fun getKeyListeners(): MutableList<EventHandler<KeyEvent>>
-
     fun getMap(): Array<IntArray>
+
+    fun getNode(): Node
 
     fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int)
 }
@@ -35,9 +39,10 @@ enum class StepStage {
 }
 
 class SnakeGame : Controller(), SnakeGameContract {
-    override fun getKeyListeners(): MutableList<EventHandler<KeyEvent>> = keyListeners
 
     override fun getMap(): Array<IntArray> = gameMap
+
+    override fun getNode(): Node = snakeFrame.grid
 
     override fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int) {
         when (prevHeadValue % 10) {
@@ -66,7 +71,7 @@ class SnakeGame : Controller(), SnakeGameContract {
         }
     }
 
-    val snakeFrame: SnakeView by inject()
+    lateinit var snakeFrame: SnakeView
     private var timeline = Timeline()
     var fps = fpsDefault
     private var lastScore = 0
@@ -76,10 +81,32 @@ class SnakeGame : Controller(), SnakeGameContract {
     var snakes = arrayOfNulls<Snake>(snakeCount)
     var applesToSpawn = snakeCount
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { _ -> MapData.EMPTY.ordinal }) })
-    private val keyListeners = mutableListOf<EventHandler<KeyEvent>>()
 
-    init {
-        updateTimer(true)
+    fun bind(snakeFrame: SnakeView) {
+        println("Ready")
+        this.snakeFrame = snakeFrame
+        getNode().addEventHandler(KeyEvent.KEY_PRESSED, {
+            event ->
+            var consume = true
+            when (event.code) {
+                KeyCode.SPACE -> {
+                    pause = !pause
+                    updateTimer()
+                    snakeFrame.play.text = if (pause) "Resume" else "Pause"
+                }
+                else -> {
+                    if (event.isControlDown) {
+                        when (event.code) {
+                            KeyCode.R -> newGame()
+                            else -> {
+                                consume = false
+                            }
+                        }
+                    }
+                }
+            }
+            if (consume) event.consume()
+        })
     }
 
     fun playButton(text: String): String {
@@ -111,6 +138,7 @@ class SnakeGame : Controller(), SnakeGameContract {
     }
 
     fun updateTimer(recreate: Boolean = false) {
+        if (!pause) snakeFrame.grid.requestFocus()
         if (recreate) {
             if (timeline.status == Animation.Status.RUNNING) timeline.stop()
             timeline = Timeline(KeyFrame(Duration.millis(1000 / fps), EventHandler<ActionEvent> {
@@ -130,8 +158,7 @@ class SnakeGame : Controller(), SnakeGameContract {
         snakes.forEachIndexed {
             i, s ->
             s?.terminate()
-            if (s == null)
-                snakes[i] = Snake(SnakeId.get(i), this)
+            snakes[i] = Snake(SnakeId.get(i), this)
             gameMap.forEachIndexed { y, row ->
                 row.forEachIndexed {
                     x, _ ->
@@ -182,9 +209,9 @@ class SnakeGame : Controller(), SnakeGameContract {
         if (!gameCont) {
             timeline.stop()
             println("Game Over")
+            snakeFrame.play.text = "Start"
             return
         }
-        println("Turn")
         StepStage.values.forEach {
             stage ->
             snakes.forEach {
@@ -192,12 +219,26 @@ class SnakeGame : Controller(), SnakeGameContract {
                 snake?.step(stage)
             }
         }
+        spawnApples()
+        draw(gameMap)
         gameCont = false
         snakes.forEach {
             snake ->
             gameCont = gameCont || !(snake?.dead ?: true)
         }
-        snakeFrame.grid.requestLayout()
+    }
+
+    fun draw(map: Array<IntArray>) {
+        snakeFrame.grid.children.filter { it is Rectangle }.forEach {
+            rect ->
+            val row = GridPane.getRowIndex(rect)
+            val col = GridPane.getColumnIndex(rect)
+            val data = MapData.get(map[row][col])
+            if (data == MapData.SNAKE_HEAD || data == MapData.SNAKE_BODY)
+                if (snakes[MapData.getSnake(map[row][col]).ordinal]?.dead ?: true)
+                    map[row][col] = MapData.EMPTY.ordinal
+            MapData.color(rect as Rectangle, map[row][col])
+        }
     }
 
 }

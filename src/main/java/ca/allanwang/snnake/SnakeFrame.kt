@@ -2,13 +2,13 @@ package ca.allanwang.snnake
 
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
+import javafx.scene.control.Button
+import javafx.scene.control.Label
 import javafx.scene.control.ToggleGroup
 import javafx.scene.input.KeyCode
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.VBox
 import javafx.scene.paint.Color
-import javafx.scene.shape.Rectangle
-import javafx.scene.text.Text
 import tornadofx.*
 
 /**
@@ -25,13 +25,7 @@ const val fpsMin: Double = 0.0
 const val fpsMax: Double = 60.0
 const val fpsInc: Double = 2.0
 
-class SnakeView : View("sNNake 2.0"), ViewContract {
-    override fun draw(map: Array<Array<Int>>) {
-        grid.children.filter { it is Rectangle }.forEach {
-            rect ->
-            MapData.color(rect as Rectangle, map[GridPane.getRowIndex(rect)][GridPane.getColumnIndex(rect)])
-        }
-    }
+class SnakeView : View("sNNake 2.1") {
 
     override val root = VBox()
 
@@ -39,12 +33,14 @@ class SnakeView : View("sNNake 2.0"), ViewContract {
     private val player1 = ToggleGroup()
     private val player2 = ToggleGroup()
     lateinit var grid: GridPane
-    private lateinit var fps: Text
+    lateinit var play: Button
+    private lateinit var fps: Label
 
     init {
         with(root) {
             borderpane {
                 left = vbox {
+                    alignment = Pos.TOP_CENTER
                     hbox {
                         vbox {
                             label("Player 1")
@@ -62,10 +58,10 @@ class SnakeView : View("sNNake 2.0"), ViewContract {
                             }
 
                         }
-                        children.filter { it is VBox }.addClass(SnakeStyle.frame)
+                        children.filter { it is VBox }.addClass(SnakeStyle.padding)
                     }
                     slider(fpsMin, fpsMax, fpsDefault, Orientation.HORIZONTAL) {
-                        addClass(SnakeStyle.center)
+                        addClass(SnakeStyle.paddingHorizontal)
                         blockIncrement = 6.0
                         isShowTickMarks = true
                         isShowTickLabels = true
@@ -83,11 +79,10 @@ class SnakeView : View("sNNake 2.0"), ViewContract {
                             }
                         }
                     }
-                    fps = text(String.format("%d fps", controller.fps.toLong())){
-                        addClass(SnakeStyle.center)
+                    fps = label(String.format("%d fps", controller.fps.toLong())) {
+                        addClass(SnakeStyle.paddingBottom)
                     }
-                    button("Start") {
-                        addClass(SnakeStyle.center)
+                    play = button("Start") {
                         shortcut(KeyCode.SPACE.name)
                         action {
                             text = controller.playButton(text)
@@ -96,8 +91,8 @@ class SnakeView : View("sNNake 2.0"), ViewContract {
                 }
                 center = vbox {
                     grid = gridpane {
-                        for (y in 0..gameHeight)
-                            for (x in 0..gameWidth)
+                        for (y in 0..gameHeight - 1)
+                            for (x in 0..gameWidth - 1)
                                 rectangle {
                                     gridpaneConstraints {
                                         columnRowIndex(x, y)
@@ -110,32 +105,28 @@ class SnakeView : View("sNNake 2.0"), ViewContract {
                 }
             }
         }
+        controller.bind(this)
     }
-}
-
-interface ViewContract {
-    fun draw(map: Array<Array<Int>>)
 }
 
 class SnakeStyle : Stylesheet() {
     companion object {
-        val frame by cssclass()
-        val center by cssclass()
+        val padding by cssclass()
+        val paddingHorizontal by cssclass()
+        val paddingBottom by cssclass()
         val apple = Color.RED
-        val border = Color.WHITE
         val background = Color.BLACK
     }
 
     init {
-        val padMedium = mixin {
+        padding {
             padding = box(20.px)
         }
-        frame {
-            +padMedium
+        paddingHorizontal {
+            padding = box(0.px, 20.px)
         }
-        center {
-            +padMedium
-            alignment = Pos.CENTER
+        paddingBottom {
+            padding = box(0.px, 0.px, 20.px, 0.px)
         }
         radioButton {
             padding = box(5.px, 0.px)

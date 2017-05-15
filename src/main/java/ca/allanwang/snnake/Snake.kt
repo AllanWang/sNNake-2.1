@@ -40,31 +40,33 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
 
     init {
         positions.add(C(id.initX, id.initY))
+        addKeyEventHandler()
     }
 
     fun addKeyEventHandler() {
-        if (keyEventHandler == null)
-            keyEventHandler = EventHandler {
-                event ->
-                val potentialDirection = when (event.code) {
-                    id.left -> Directions.LEFT
-                    id.up -> Directions.UP
-                    id.right -> Directions.RIGHT
-                    id.down -> Directions.DOWN
-                    else -> Directions.NONE
-                }
-                if (potentialDirection != Directions.NONE && !prevDirection.isOpposite(potentialDirection))
+        if (keyEventHandler != null) return
+        keyEventHandler = EventHandler<KeyEvent> {
+            event ->
+            val potentialDirection = when (event.code) {
+                id.left -> Directions.LEFT
+                id.up -> Directions.UP
+                id.right -> Directions.RIGHT
+                id.down -> Directions.DOWN
+                else -> Directions.NONE
+            }
+            if (potentialDirection != Directions.NONE) {
+                event.consume()
+                if (!prevDirection.isOpposite(potentialDirection))
                     pendingDirection = potentialDirection
             }
-        if (!gameContract.getKeyListeners().contains(keyEventHandler!!))
-            gameContract.getKeyListeners().add(keyEventHandler!!)
+        }
+        gameContract.getNode().addEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler)
     }
 
     fun removeKeyEventHandler() {
-        if (keyEventHandler != null) {
-            gameContract.getKeyListeners().remove(keyEventHandler!!)
-            keyEventHandler = null
-        }
+        if (keyEventHandler == null) return
+        gameContract.getNode().removeEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler)
+        keyEventHandler = null
     }
 
     fun score(points: FlagScore) {
@@ -82,7 +84,7 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
             StepStage.HEAD -> {
                 prevDirection = pendingDirection
                 head().set(map, MapData.SNAKE_BODY.bind(id)) // prev head is now body
-                println(String.format("Snake %d coords %s", id.ordinal, head()))
+//                println(String.format("Snake %d coords %s", id.ordinal, head()))
                 prevHeadValue = positions.move(pendingDirection).get(map)
                 val prevHeadMapData = MapData.get(prevHeadValue)
                 if (prevHeadMapData != MapData.SNAKE_BODY && prevHeadMapData != MapData.SNAKE_HEAD)
