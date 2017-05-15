@@ -35,7 +35,6 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
     private var pendingDirection = id.initDirection
     private var keyEventHandler: EventHandler<KeyEvent>? = null
 
-
     fun head() = positions.head
 
     init {
@@ -73,6 +72,12 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
         score += points.points
         positions.incrementMaxSize(points.sizeIncrease)
     }
+
+    fun flushScore() {
+        prevScore = score
+    }
+
+    fun hasScoreChanged() = prevScore < score
 
     fun step(stage: StepStage) {
         if (dead) return

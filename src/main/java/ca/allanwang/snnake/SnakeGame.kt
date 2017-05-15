@@ -48,22 +48,22 @@ class SnakeGame : Controller(), SnakeGameContract {
         when (prevHeadValue % 10) {
             MapData.EMPTY.ordinal -> return
             MapData.APPLE.ordinal -> {
-                snakes[id.ordinal]?.score(FlagScore.APPLE)
+                snakes[id.ordinal].score(FlagScore.APPLE)
                 applesToSpawn++
             }
             MapData.SNAKE_BODY.ordinal -> {
-                snakes[id.ordinal]?.terminate()
+                snakes[id.ordinal].terminate()
                 val otherSnake = MapData.getSnake(prevHeadValue)
                 if (otherSnake != id)
-                    snakes[otherSnake.ordinal]?.score(FlagScore.CAPTURED_SNAKE)
+                    snakes[otherSnake.ordinal].score(FlagScore.CAPTURED_SNAKE)
             }
             MapData.SNAKE_HEAD.ordinal -> {
-                snakes[id.ordinal]?.terminate()
+                snakes[id.ordinal].terminate()
                 val otherSnake = MapData.getSnake(prevHeadValue)
-                snakes[otherSnake.ordinal]?.terminate()
+                snakes[otherSnake.ordinal].terminate()
             }
             MapData.INVALID.ordinal -> {
-                snakes[id.ordinal]?.terminate()
+                snakes[id.ordinal].terminate()
             }
             else -> {
                 println(String.format("Unknown status %d from snake %d", prevHeadValue, id.ordinal))
@@ -74,11 +74,9 @@ class SnakeGame : Controller(), SnakeGameContract {
     lateinit var snakeFrame: SnakeView
     private var timeline = Timeline()
     var fps = fpsDefault
-    private var lastScore = 0
-    var score = 0
     private var pause = true
     private var gameCont = false
-    var snakes = arrayOfNulls<Snake>(snakeCount)
+    var snakes = mutableListOf<Snake>()
     var applesToSpawn = snakeCount
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { _ -> MapData.EMPTY.ordinal }) })
 
@@ -155,15 +153,17 @@ class SnakeGame : Controller(), SnakeGameContract {
         gameCont = true
         pause = false
         updateTimer(true)
-        snakes.forEachIndexed {
-            i, s ->
-            s?.terminate()
-            snakes[i] = Snake(SnakeId.get(i), this)
-            gameMap.forEachIndexed { y, row ->
-                row.forEachIndexed {
-                    x, _ ->
-                    gameMap[y][x] = MapData.EMPTY.ordinal
-                }
+        snakes.forEach {
+            s ->
+            s.terminate()
+        }
+        snakes.clear()
+        for (i in 0..snakeCount - 1)
+            snakes.add(Snake(SnakeId.get(i), this))
+        gameMap.forEachIndexed { y, row ->
+            row.forEachIndexed {
+                x, _ ->
+                gameMap[y][x] = MapData.EMPTY.ordinal
             }
         }
         applesToSpawn = snakeCount
@@ -196,7 +196,7 @@ class SnakeGame : Controller(), SnakeGameContract {
      */
     private fun validateApple(c: C): Boolean {
         if (gameMap[c.y][c.x] != MapData.EMPTY.ordinal) return false
-        return snakes.none { it != null && !it.dead && c.isWithin(it.head(), 3) }
+        return snakes.none { !it.dead && c.isWithin(it.head(), 3) }
     }
 
     private fun randomC(): C {
@@ -216,7 +216,7 @@ class SnakeGame : Controller(), SnakeGameContract {
             stage ->
             snakes.forEach {
                 snake ->
-                snake?.step(stage)
+                snake.step(stage)
             }
         }
         spawnApples()
@@ -224,7 +224,7 @@ class SnakeGame : Controller(), SnakeGameContract {
         gameCont = false
         snakes.forEach {
             snake ->
-            gameCont = gameCont || !(snake?.dead ?: true)
+            gameCont = gameCont || !snake.dead
         }
     }
 
@@ -235,7 +235,7 @@ class SnakeGame : Controller(), SnakeGameContract {
             val col = GridPane.getColumnIndex(rect)
             val data = MapData.get(map[row][col])
             if (data == MapData.SNAKE_HEAD || data == MapData.SNAKE_BODY)
-                if (snakes[MapData.getSnake(map[row][col]).ordinal]?.dead ?: true)
+                if (snakes[MapData.getSnake(map[row][col]).ordinal].dead)
                     map[row][col] = MapData.EMPTY.ordinal
             MapData.color(rect as Rectangle, map[row][col])
         }
