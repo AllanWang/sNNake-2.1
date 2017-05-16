@@ -6,8 +6,6 @@ import java.util.*
 /**
  * Created by Allan Wang on 2017-05-13.
  */
-val snakeCount = playerCount + cpuCount
-val initOffset: Int = Math.min(gameHeight / 5, gameWidth / 5)
 
 enum class Directions {
     NONE {

@@ -23,8 +23,13 @@ enum class SnakeId(val color: Color, val left: KeyCode, val up: KeyCode, val rig
     }
 }
 
-class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
-
+class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract) {
+    var human = human
+        set(value) {
+            field = value
+            if (field) addKeyEventHandler()
+            else removeKeyEventHandler()
+        }
     val positions = SnakeQueue()
     var score = 0
     private var prevScore = 0
@@ -39,11 +44,12 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
 
     init {
         positions.add(C(id.initX, id.initY))
-        addKeyEventHandler()
+        this.human = human
     }
 
     fun addKeyEventHandler() {
-        if (keyEventHandler != null) return
+        val grid = gameContract.getNode()
+        if (grid == null || keyEventHandler != null) return
         keyEventHandler = EventHandler<KeyEvent> {
             event ->
             val potentialDirection = when (event.code) {
@@ -59,12 +65,13 @@ class Snake(val id: SnakeId, val gameContract: SnakeGameContract) {
                     pendingDirection = potentialDirection
             }
         }
-        gameContract.getNode().addEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler)
+        grid.addEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler)
     }
 
     fun removeKeyEventHandler() {
-        if (keyEventHandler == null) return
-        gameContract.getNode().removeEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler)
+        val grid = gameContract.getNode()
+        if (grid == null || keyEventHandler == null) return
+        grid.removeEventHandler(KeyEvent.KEY_PRESSED, keyEventHandler)
         keyEventHandler = null
     }
 

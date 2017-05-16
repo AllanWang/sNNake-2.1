@@ -25,13 +25,17 @@ const val fpsMin: Double = 0.0
 const val fpsMax: Double = 60.0
 const val fpsInc: Double = 2.0
 
+const val HUMAN = "Human"
+const val NEURAL_NET = "NN"
+const val NONE = "None"
+
 class SnakeView : View("sNNake 2.1") {
 
     override val root = VBox()
 
     val controller: SnakeGame by inject()
-    private val player1 = ToggleGroup()
-    private val player2 = ToggleGroup()
+    val player1 = ToggleGroup()
+    val player2 = ToggleGroup()
     lateinit var grid: GridPane
     lateinit var play: Button
     private lateinit var fps: Label
@@ -44,16 +48,16 @@ class SnakeView : View("sNNake 2.1") {
                     hbox {
                         vbox {
                             label("Player 1")
-                            radiobutton("Human", player1) {
+                            radiobutton(HUMAN, player1) {
                                 isSelected = true
                             }
-                            radiobutton("NN", player1)
+                            radiobutton(NEURAL_NET, player1)
                         }
                         vbox {
                             label("Player 2")
-                            radiobutton("Human", player2)
-                            radiobutton("NN", player2)
-                            radiobutton("None", player2) {
+                            radiobutton(HUMAN, player2)
+                            radiobutton(NEURAL_NET, player2)
+                            radiobutton(NONE, player2) {
                                 isSelected = true
                             }
 

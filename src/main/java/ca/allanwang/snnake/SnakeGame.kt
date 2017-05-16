@@ -6,6 +6,8 @@ import javafx.animation.Timeline
 import javafx.event.ActionEvent
 import javafx.event.EventHandler
 import javafx.scene.Node
+import javafx.scene.control.RadioButton
+import javafx.scene.control.ToggleGroup
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.GridPane
@@ -25,7 +27,7 @@ interface SnakeGameContract {
 
     fun getMap(): Array<IntArray>
 
-    fun getNode(): Node
+    fun getNode(): Node?
 
     fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int)
 }
@@ -77,7 +79,7 @@ class SnakeGame : Controller(), SnakeGameContract {
     private var pause = true
     private var gameCont = false
     var snakes = mutableListOf<Snake>()
-    var applesToSpawn = snakeCount
+    var applesToSpawn = 1
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { _ -> MapData.EMPTY.ordinal }) })
 
     fun bind(snakeFrame: SnakeView) {
@@ -148,8 +150,12 @@ class SnakeGame : Controller(), SnakeGameContract {
         else if (!pause && timeline.status != Animation.Status.RUNNING) timeline.playFromStart()
     }
 
+    fun isHuman(group: ToggleGroup): Boolean {
+        return (group.selectedToggle as RadioButton).text == HUMAN
+    }
+
+
     fun newGame() {
-        if (snakeCount > 4) throw IllegalArgumentException("We can have at most 4 snakes")
         gameCont = true
         pause = false
         updateTimer(true)
@@ -158,15 +164,16 @@ class SnakeGame : Controller(), SnakeGameContract {
             s.terminate()
         }
         snakes.clear()
-        for (i in 0..snakeCount - 1)
-            snakes.add(Snake(SnakeId.get(i), this))
+        snakes.add(Snake(SnakeId._1, isHuman(snakeFrame.player1), this))
+        if ((snakeFrame.player2.selectedToggle as RadioButton).text != NONE)
+            snakes.add(Snake(SnakeId._2, isHuman(snakeFrame.player2), this))
         gameMap.forEachIndexed { y, row ->
             row.forEachIndexed {
                 x, _ ->
                 gameMap[y][x] = MapData.EMPTY.ordinal
             }
         }
-        applesToSpawn = snakeCount
+        applesToSpawn = snakes.size
         spawnApples()
     }
 
