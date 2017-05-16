@@ -61,7 +61,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     operator fun times(m: Matrix): Matrix {
         Op.MULTIPLY.validateOrThrow(this, m)
-        val orig = Matrix(matrix)
+        val orig = clone()
         matrix = Array(rows, { DoubleArray(m.cols) })
         forEach { y, x, _ -> multiply(y, x, orig, m) }
         return this
@@ -81,6 +81,8 @@ class Matrix(var matrix: Array<DoubleArray>) {
     fun transpose(): Matrix {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
+
+    fun sigmoid(): Matrix = forEach { _, _, value -> NeuralNet.sigmoid(value) }
 
     fun row(i: Int): DoubleArray = if (i < 0 || i > rows) doubleArrayOf() else matrix[i].clone()
 
@@ -108,7 +110,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     fun deepClone(): Matrix = Matrix(Array(rows) { matrix[it].clone() })
 
-    override fun equals(other: Any?): Boolean = other is Matrix && matrix contentDeepEquals other.matrix
+    override fun equals(other: Any?): Boolean = (other is Matrix && matrix contentDeepEquals other.matrix)
 
     override fun hashCode(): Int = matrix.contentDeepHashCode()
 
