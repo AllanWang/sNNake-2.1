@@ -1,11 +1,9 @@
 package ca.allanwang.snnake
 
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.fail
 
@@ -16,7 +14,6 @@ import kotlin.test.fail
 class MatrixTest {
 
     lateinit var matrix: Matrix
-    private val outContent = ByteArrayOutputStream()
 
     @Before
     fun init() {
@@ -24,12 +21,6 @@ class MatrixTest {
                 doubleArrayOf(1.0, 2.0, 3.0),
                 doubleArrayOf(4.0, 5.0, 6.0)
         ))
-        System.setOut(PrintStream(outContent))
-    }
-
-    @After
-    fun cleanUp() {
-        System.setOut(null)
     }
 
     @Test
@@ -69,8 +60,13 @@ class MatrixTest {
     @Test
     fun badAdd() {
         val toAdd = Matrix(2, 2, 2.0)
-        assertEquals(matrix, matrix + toAdd, "Cannot add 2 x 3 to 2 x 2")
-        assertEquals("Add: size mismatch, 2 x 3 & 2 x 2", outContent.toString().trim())
+        assertFalse(matrix.validate(Op.ADD, toAdd), "Cannot add 2 x 3 to 2 x 2")
+        try {
+            matrix + toAdd
+            fail("Did not catch bad addition")
+        } catch (e: MatrixException) {
+            assertEquals(Op.ADD.errorMessage(matrix, toAdd), e.message)
+        }
     }
 
     @Test
@@ -102,8 +98,13 @@ class MatrixTest {
     @Test
     fun badTime() {
         val twoSized = Matrix(2, 2, 1.0)
-        assertEquals(matrix, matrix * twoSized, "Cannot multiply 2 x 3 to 2 x 2")
-        assertEquals("Times: size mismatch, 2 x 3 & 2 x 2", outContent.toString().trim())
+        assertFalse(matrix.validate(Op.MULTIPLY, twoSized), "Cannot multiply 2 x 3 to 2 x 2")
+        try {
+            matrix * twoSized
+            fail("Did not catch bad multiplication")
+        } catch (e: MatrixException) {
+            assertEquals(Op.MULTIPLY.errorMessage(matrix, twoSized), e.message)
+        }
     }
 
     @Test

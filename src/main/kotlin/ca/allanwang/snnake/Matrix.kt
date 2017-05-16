@@ -5,6 +5,26 @@ package ca.allanwang.snnake
  */
 class MatrixException(message: String) : RuntimeException(message)
 
+enum class Op {
+    ADD {
+        override fun validate(m: Matrix, n: Matrix) = m.rows == n.rows && m.cols == n.cols
+    },
+    SUBTRACT {
+        override fun validate(m: Matrix, n: Matrix) = m.rows == n.rows && m.cols == n.cols
+    },
+    MULTIPLY {
+        override fun validate(m: Matrix, n: Matrix) = m.cols == n.rows
+    };
+
+    abstract fun validate(m: Matrix, n: Matrix): Boolean
+
+    fun validateOrThrow(m: Matrix, n: Matrix) {
+        if (!validate(m, n)) throw MatrixException(errorMessage(m, n))
+    }
+
+    fun errorMessage(m: Matrix, n: Matrix) = String.format("%s: size mismatch, (%d x %d) & (%d x %d)", toString(), m.rows, m.cols, n.rows, n.cols)
+}
+
 class Matrix(var matrix: Array<DoubleArray>) {
     val rows = matrix.size
     val cols = matrix[0].size
@@ -27,20 +47,24 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     operator fun get(row: Int): DoubleArray = matrix[row]
 
-    operator fun plus(m: Matrix): Matrix = if (rows != m.rows || cols != m.cols) mismatch("Add", m) else forEach { y, x, value -> value + m[y][x] }
+    operator fun plus(m: Matrix): Matrix {
+        Op.ADD.validateOrThrow(this, m)
+        return forEach { y, x, value -> value + m[y][x] }
+    }
 
     operator fun unaryMinus(): Matrix = forEach { i -> -i }
 
-    operator fun minus(m: Matrix): Matrix = this + (-m)
+    operator fun minus(m: Matrix): Matrix {
+        Op.SUBTRACT.validateOrThrow(this, m)
+        return this + (-m)
+    }
 
     operator fun times(m: Matrix): Matrix {
-        return if (cols != m.rows) mismatch("Times", m)
-        else {
-            val orig = Matrix(matrix)
-            matrix = Array(rows, { DoubleArray(m.cols) })
-            forEach { y, x, _ -> multiply(y, x, orig, m) }
-            return this
-        }
+        Op.MULTIPLY.validateOrThrow(this, m)
+        val orig = Matrix(matrix)
+        matrix = Array(rows, { DoubleArray(m.cols) })
+        forEach { y, x, _ -> multiply(y, x, orig, m) }
+        return this
     }
 
     private fun multiply(row: Int, col: Int, m: Matrix, n: Matrix): Double {
@@ -52,6 +76,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
         return result
     }
 
+    fun validate(op: Op, m: Matrix): Boolean = op.validate(this, m)
 
     fun transpose(): Matrix {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
