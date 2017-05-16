@@ -134,4 +134,14 @@ class MatrixTest {
         assertEquals(1.0, clone[0][0], "Deep cloned still has val 1.0 at index 0 0")
         assertNotEquals(matrix, clone, "Deep cloned matrix should no longer be equal to original")
     }
+
+    @Test
+    fun row() {
+        assertEquals(doubleArrayOf(1.0, 2.0, 3.0).contentToString(), matrix.row(0).contentToString(), "First row is 1, 2, 3")
+    }
+
+    @Test
+    fun col() {
+        assertEquals(doubleArrayOf(2.0, 5.0).contentToString(), matrix.col(1).contentToString(), "Second column is 2, 5")
+    }
 }

@@ -10,8 +10,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     val cols = matrix[0].size
 
     constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols) {
-        if (values.size != rows * cols)
-            throw MatrixException("Matrix row col creation mismatch")
+        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch")
         forEach { y, x, _ -> values[y * cols + x] }
     }
 
@@ -28,14 +27,9 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     operator fun get(row: Int): DoubleArray = matrix[row]
 
-    operator fun plus(m: Matrix): Matrix {
-        return if (rows != m.rows || cols != m.cols) mismatch("Add", m)
-        else forEach { y, x, value -> value + m[y][x] }
-    }
+    operator fun plus(m: Matrix): Matrix = if (rows != m.rows || cols != m.cols) mismatch("Add", m) else forEach { y, x, value -> value + m[y][x] }
 
-    operator fun unaryMinus(): Matrix {
-        return forEach { i -> -i }
-    }
+    operator fun unaryMinus(): Matrix = forEach { i -> -i }
 
     operator fun minus(m: Matrix): Matrix = this + (-m)
 
@@ -63,9 +57,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    private fun forEach(mutation: (value: Double) -> Double): Matrix {
-        return forEach { _, _, value -> mutation(value) }
-    }
+    fun row(i: Int): DoubleArray = if (i < 0 || i > rows) doubleArrayOf() else matrix[i].clone()
+
+    fun col(i: Int): DoubleArray = if (i < 0 || i > cols) doubleArrayOf() else DoubleArray(rows, { j -> matrix[j][i] })
+
+    private fun forEach(mutation: (value: Double) -> Double): Matrix = forEach { _, _, value -> mutation(value) }
 
     private fun forEach(mutation: (y: Int, x: Int, value: Double) -> Double): Matrix {
         matrix.forEachIndexed {
