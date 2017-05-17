@@ -1,7 +1,5 @@
 package ca.allanwang.snnake
 
-import java.util.*
-
 /**
  * Created by Allan Wang on 2017-05-15.
  */
@@ -9,22 +7,41 @@ class NeuralNetException(message: String) : RuntimeException(message)
 
 enum class Activator {
     SIGMOID {
-        override val activate: (value: Double) -> Double = { 1.0 / (1.0 + Math.pow(Math.E, -it)) }
-        override val activatePrime: (value: Double) -> Double = { Math.pow(Math.E, -it) / Math.pow(1.0 + Math.pow(Math.E, -it), 2.0) }
+        override val activate: (value: Double) -> Double = { 1.0 / (1.0 + Math.exp(-it)) }
+        override val activatePrime: (value: Double) -> Double = { Math.exp(-it) / Math.pow(1.0 + Math.exp(-it), 2.0) }
     };
 
     abstract val activate: (value: Double) -> Double
     abstract val activatePrime: (value: Double) -> Double
 }
 
-class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIGMOID) {
+enum class Random {
+    /**
+     * Returns random number between -1 & 1
+     */
+    ABS_ONE {
+        override fun random(): Double = java.util.Random().nextDouble() * 2 - 1
+    },
+    /**
+     * Returns random numbers with a mean of 0.0 and a stdev of 1.0; same as numpy.random.randn
+     */
+    GAUSSIAN {
+        override fun random(): Double = java.util.Random().nextGaussian()
+    };
 
-    val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> randomValue() } })
+    abstract fun random(): Double
+}
+
+class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIGMOID, var random: Random = Random.GAUSSIAN) {
+
+    val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> random.random() } })
     fun layerSize(i: Int) = matrices[i].rows
     val inputSize: Int
         get() = matrices.first().rows
     val outputSize: Int
         get() = matrices.last().rows
+    val weightCount: Int
+        get() = matrices.sumBy { matrix -> matrix.size }
 
     operator fun get(i: Int): Matrix = matrices[i]
 
@@ -36,6 +53,15 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
         }
         if (iter.hasNext()) throw NeuralNetException("Too many weights given in setWeights")
         return this
+    }
+
+    fun getWeights(): DoubleArray {
+        var weights = doubleArrayOf()
+        matrices.forEach {
+            matrix ->
+            weights += matrix.toArray()
+        }
+        return weights
     }
 
     fun setWeights(index: Int, vararg values: Double): NeuralNet {
@@ -65,6 +91,7 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
             val activity = (data * matrix).clone() //ensure this activity no longer changes; data however will be affected cumulatively
             val activation = activity.clone().forEach(activator.activate)
             list.add(Pair(activity, activation))
+            data.set(activation)
         }
         return list
     }
@@ -75,7 +102,7 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
      */
     fun costFunction(input: Matrix, output: Matrix): Matrix {
         val result = forward(input).last().second
-        return result.minus(output).forEach { value -> 0.5 * Math.pow(value, 2.0) }.sumRows()
+        return result.minus(output.clone()).forEach { value -> 0.5 * Math.pow(value, 2.0) }.sumRows()
     }
 
     /**
@@ -96,34 +123,33 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
      */
     fun costFunctionPrime(input: Matrix, output: Matrix): MutableList<Matrix> {
         val costList = mutableListOf<Matrix>()
-        val resultData = forward(input.clone())
+        val resultData = forward(input)
         resultData.reverse()
-        resultData.add(Pair(Matrix(1, 1), input))
+        resultData.add(Pair(Matrix(1, 1), input.clone()))
         val diff = -(output.clone() - resultData.first().second)  // -(y - yHat), where yHat = a_last
         resultData.forEach {
             pair ->
-            costList.add(pair.second.clone() * (diff.clone().forEach(activator.activatePrime)))
+            costList.add(pair.second.transpose() * (diff.clone().forEach(activator.activatePrime)))
         }
         costList.reverse()
         return costList
     }
 
-    override fun equals(other: Any?): Boolean = (other is NeuralNet && inputSize == other.inputSize && outputSize == other.outputSize && matrices contentDeepEquals other.matrices)
+    override fun equals(other: Any?): Boolean = (other is NeuralNet &&
+            inputSize == other.inputSize && outputSize == other.outputSize && matrices contentDeepEquals other.matrices)
+
+    fun equals(other: Any?, maxDiff: Double): Boolean = (other is NeuralNet &&
+            inputSize == other.inputSize && outputSize == other.outputSize && matrices.size != other.matrices.size &&
+            (0..matrices.size - 1).all { matrices[it].equals(other.matrices[it], maxDiff) })
 
     override fun hashCode(): Int = matrices.contentDeepHashCode()
 
     override fun toString(): String {
         val builder = StringBuilder()
-        builder.append(String.format("NN: %d layers\n", matrices.size + 1))
-        builder.append(String.format("%d input neurons; %d output neurons", inputSize, outputSize))
-        builder.append(matrices.contentToString())
+        builder.append("NN: ${matrices.size + 1} layers\n")
+        builder.append("$inputSize input neurons; $outputSize output neurons\n")
+        matrices.forEach { matrix -> builder.append(matrix.toString()) }
         return builder.toString()
     }
 
-    companion object {
-        /**
-         * Returns random number between -1 & 1
-         */
-        fun randomValue() = Random().nextDouble() * 2 - 1
-    }
 }

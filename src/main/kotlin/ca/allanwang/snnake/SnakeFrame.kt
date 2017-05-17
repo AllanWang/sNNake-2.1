@@ -78,12 +78,12 @@ class SnakeView : View("sNNake 2.1") {
                             val newR = fpsInc * Math.round(newValue.toDouble() / fpsInc)
                             if (oldR != newR) {
                                 value = newR
-                                fps.text = String.format("%d fps", newR.toLong())
+                                fps.text = "${newR.toLong()} fps"
                                 controller.changeFps(newR)
                             }
                         }
                     }
-                    fps = label(String.format("%d fps", controller.fps.toLong())) {
+                    fps = label("${controller.fps.toLong()} fps") {
                         addClass(SnakeStyle.paddingBottom)
                     }
                     play = button("Start") {

@@ -45,13 +45,6 @@ class NeuralNetCoreTest {
     //Helper tests
 
     @Test
-    fun random() {
-        val rand = NeuralNet.randomValue()
-        assertTrue(rand <= 1)
-        assertTrue(rand >= -1)
-    }
-
-    @Test
     fun sigmoidMax() {
         assertDoubleEquals(1.0, Activator.SIGMOID.activate(Double.MAX_VALUE), "Sigmoid(max) == 1")
     }
@@ -71,7 +64,7 @@ class NeuralNetCoreTest {
         assertDoubleEquals(0.0, Activator.SIGMOID.activatePrime(Double.MAX_VALUE), "Sigmoid'(max) == 0")
     }
 
-    //Exponents get too big to compute, but -99 serves its purpose
+    //Exponents random too big to compute, but -99 serves its purpose
     @Test
     fun sigmoidPrimeMin() {
         assertDoubleEquals(0.0, Activator.SIGMOID.activatePrime(-99.0), "Sigmoid'(min) == 0")
@@ -80,5 +73,15 @@ class NeuralNetCoreTest {
     @Test
     fun sigmoidPrimeZero() {
         assertDoubleEquals(0.25, Activator.SIGMOID.activatePrime(0.0), "Sigmoid'(0) == 0.5")
+    }
+
+    //Ensure that random() is a function that doesn't cache the variable
+    @Test
+    fun randomAbsOneTest() {
+        val a = Random.ABS_ONE.random()
+        val b = Random.ABS_ONE.random()
+        assertDoubleNotEquals(a, b, "Random variables should be different")
+        assertTrue(a <= 1)
+        assertTrue(a >= -1)
     }
 }

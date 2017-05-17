@@ -68,7 +68,7 @@ class SnakeGame : Controller(), SnakeGameContract {
                 snakes[id.ordinal].terminate()
             }
             else -> {
-                println(String.format("Unknown status %d from snake %d", prevHeadValue, id.ordinal))
+                println("Unknown status $prevHeadValue from snake ${id.ordinal}")
             }
         }
     }
@@ -126,7 +126,7 @@ class SnakeGame : Controller(), SnakeGameContract {
                 return "Pause"
             }
             else -> {
-                println(String.format("Unknown playButton text %s", text))
+                println("Unknown playButton text $text")
                 return "Error"
             }
         }

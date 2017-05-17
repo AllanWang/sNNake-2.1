@@ -2,10 +2,7 @@ package ca.allanwang.snnake
 
 import org.junit.Before
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.fail
+import kotlin.test.*
 
 
 /**
@@ -58,15 +55,22 @@ class MatrixTest {
     }
 
     @Test
+    fun equals() {
+        val x = matrix.clone() - 1e-5
+        assertFalse(matrix == x, "Matrices should no longer be equal")
+        assertTrue(matrix.equals(x, 1e-4), "Matrices should be leniently equal")
+    }
+
+    @Test
     fun sumRows() {
         val result = Matrix(1, 3, 5.0, 7.0, 9.0)
-        assertEquals(result, matrix.sumRows(), "sumRows should add all columns together and output a matrix with one row")
+        assertEquals(result, matrix.sumRows(), "sumRows should addSub all columns together and output a matrix with one row")
     }
 
     @Test
     fun badAdd() {
         val toAdd = Matrix(2, 2, 2.0)
-        assertFalse(matrix.validate(Op.ADD, toAdd), "Cannot add 2 x 3 to 2 x 2")
+        assertFalse(matrix.validate(Op.ADD, toAdd), "Cannot addSub 2 x 3 to 2 x 2")
         try {
             matrix + toAdd
             fail("Did not catch bad addition")

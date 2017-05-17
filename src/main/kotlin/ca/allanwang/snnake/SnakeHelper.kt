@@ -66,7 +66,7 @@ enum class MapData {
     abstract fun color(rect: Rectangle, id: SnakeId)
 
     companion object {
-        val values: Array<MapData> = MapData.values() // cache array data so it doesn't get recreated each time
+        val values: Array<MapData> = MapData.values() // cache array data so it doesn't random recreated each time
         fun get(i: Int): MapData {
             var ii = i
             if (ii >= values.size) ii %= values.size

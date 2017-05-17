@@ -13,7 +13,7 @@ enum class SnakeId(val color: Color, val left: KeyCode, val up: KeyCode, val rig
     _2(Color.CYAN, KeyCode.LEFT, KeyCode.UP, KeyCode.RIGHT, KeyCode.DOWN, Directions.LEFT, gameWidth - initOffset, gameHeight - initOffset);
 
     companion object {
-        val values: Array<SnakeId> = SnakeId.values() // cache array data so it doesn't get recreated each time
+        val values: Array<SnakeId> = SnakeId.values() // cache array data so it doesn't random recreated each time
         fun get(i: Int): SnakeId {
             var ii = i
             if (ii >= values.size) ii %= values.size
@@ -96,7 +96,6 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
             StepStage.HEAD -> {
                 prevDirection = pendingDirection
                 head().set(map, MapData.SNAKE_BODY.bind(id)) // prev head is now body
-//                println(String.format("Snake %d coords %s", id.ordinal, head()))
                 prevHeadValue = positions.move(pendingDirection).get(map)
                 val prevHeadMapData = MapData.get(prevHeadValue)
                 if (prevHeadMapData != MapData.SNAKE_BODY && prevHeadMapData != MapData.SNAKE_HEAD)
@@ -109,7 +108,7 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
     }
 
     fun terminate() {
-        println(String.format("Snake %d died", id.ordinal))
+        println("Snake ${id.ordinal} died")
         dead = true
         positions.clear()
         removeKeyEventHandler()

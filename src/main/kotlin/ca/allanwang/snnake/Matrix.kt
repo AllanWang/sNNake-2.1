@@ -30,7 +30,32 @@ enum class Op {
         if (!validate(m, n)) throw MatrixException(errorMessage(m, n))
     }
 
-    fun errorMessage(m: Matrix, n: Matrix) = String.format("%s: size mismatch, (%d x %d) & (%d x %d)", toString(), m.rows, m.cols, n.rows, n.cols)
+    fun errorMessage(m: Matrix, n: Matrix) = "${toString()}: size mismatch, (${m.rows} x ${m.cols}) & (${n.rows} x ${n.cols})"
+}
+
+enum class Normalizer {
+    //Divides each column by that column's max value
+    COL_MAX {
+        override fun apply(m: Matrix) {
+            for (col in 0..m.cols - 1) {
+                var max = m[0][col]
+                (1..m.rows - 1).asSequence()
+                        .filter { m[it][col] > max }
+                        .forEach { max = m[it][col] }
+                if (Math.abs(max) > 1.0)
+                    (0..m.rows - 1).asSequence()
+                            .forEach { m[it][col] /= max }
+            }
+        }
+    };
+
+    fun normalize(m: Matrix): Matrix {
+        m.matrix = m.deepClone().matrix
+        apply(m)
+        return m
+    }
+
+    abstract internal fun apply(m: Matrix)
 }
 
 class Matrix(var matrix: Array<DoubleArray>) {
@@ -38,10 +63,17 @@ class Matrix(var matrix: Array<DoubleArray>) {
         get() = matrix.size
     val cols: Int
         get() = matrix[0].size
+    val size: Int
+        get() = rows * cols
 
     constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols) {
         if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch")
         forEach { y, x, _ -> values[y * cols + x] }
+    }
+
+    constructor(rows: Int, cols: Int, vararg values: Int) : this(rows, cols) {
+        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch")
+        forEach { y, x, _ -> values[y * cols + x].toDouble() }
     }
 
     constructor(rows: Int, cols: Int) : this(rows, cols, 0.0)
@@ -56,7 +88,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     }
 
     fun set(m: Matrix): Matrix {
-        this.matrix = m.matrix
+        this.matrix = m.deepClone().matrix
         return this
     }
 
@@ -66,6 +98,15 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     operator fun get(row: Int): DoubleArray = matrix[row]
     operator fun get(row: Int, col: Int): Double = matrix[row][col]
+
+    fun toArray(): DoubleArray {
+        var array = doubleArrayOf()
+        matrix.forEach {
+            row ->
+            array += row
+        }
+        return array
+    }
 
     fun sumRows(): Matrix {
         matrix = Array(1, { DoubleArray(cols, { i -> col(i).sum() }) })
@@ -77,12 +118,16 @@ class Matrix(var matrix: Array<DoubleArray>) {
         return forEach { y, x, value -> value + m[y][x] }
     }
 
+    operator fun plus(d: Double): Matrix = forEach { value -> value + d }
+
     operator fun unaryMinus(): Matrix = forEach { i -> -i }
 
     operator fun minus(m: Matrix): Matrix {
         Op.SUBTRACT.validateOrThrow(this, m)
         return this + (-m)
     }
+
+    operator fun minus(d: Double): Matrix = forEach { value -> value - d }
 
     /**
      * Multiplies each cell by [d]
@@ -106,6 +151,8 @@ class Matrix(var matrix: Array<DoubleArray>) {
         return result
     }
 
+    operator fun div(d: Double): Matrix = forEach { value -> value / d }
+
     fun validate(op: Op, m: Matrix): Boolean = op.validate(this, m)
 
     fun transpose(): Matrix {
@@ -113,6 +160,8 @@ class Matrix(var matrix: Array<DoubleArray>) {
         matrix = Array(cols, { y -> kotlin.DoubleArray(rows, { x -> orig[x][y] }) })
         return this
     }
+
+    fun normalize(normalizer: Normalizer): Matrix = normalizer.normalize(this)
 
     fun row(i: Int): DoubleArray = if (i < 0 || i > rows) doubleArrayOf() else matrix[i].clone()
 
@@ -142,6 +191,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     override fun equals(other: Any?): Boolean = (other is Matrix && matrix contentDeepEquals other.matrix)
 
+    /**
+     * Checks for equality but allowing a difference of up to [maxDiff] for every corresponding pair of cells
+     */
+    fun equals(other: Any?, maxDiff: Double): Boolean = ((other is Matrix) && (rows == other.rows) && (cols == other.cols) && ((deepClone() - other).matrix.all { row -> row.all { value -> Math.abs(value) <= maxDiff } }))
+
     override fun hashCode(): Int = matrix.contentDeepHashCode()
 
     override fun toString(): String {
@@ -152,10 +206,37 @@ class Matrix(var matrix: Array<DoubleArray>) {
             builder.append("| ")
             row.forEach {
                 v ->
-                builder.append(v).append(" ")
+                builder.append(doubleString(v)).append(" ")
             }
             builder.append("|\n")
         }
         return builder.toString()
+    }
+
+    /**
+     * Formats a double into a String so that it is exactly [digits] char in length
+     * If number is not negative, a space will be added in the front to align it with the
+     * other negative values (which have a '-' prefix)
+     */
+    internal fun doubleString(d: Double, digits: Int = 12): StringBuilder {
+        var i = digits
+        val builder = StringBuilder()
+        if (d >= 0) {
+            builder.append(" ")
+            i--
+        }
+        val ds = d.toString()
+        if (ds.length > i)
+            builder.append(ds.substring(0, i))
+        else {
+            builder.append(ds)
+            for (z in 1..i - ds.length)
+                builder.append('0')
+        }
+        return builder
+    }
+
+    companion object {
+        val EMPTY: Matrix = Matrix(0, 0)
     }
 }
