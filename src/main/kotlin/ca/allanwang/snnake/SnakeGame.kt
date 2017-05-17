@@ -80,7 +80,7 @@ class SnakeGame : Controller(), SnakeGameContract {
     private var gameCont = false
     var snakes = mutableListOf<Snake>()
     var applesToSpawn = 1
-    val gameMap = Array(gameHeight, { IntArray(gameWidth, { _ -> MapData.EMPTY.ordinal }) })
+    val gameMap = Array(gameHeight, { IntArray(gameWidth, { MapData.EMPTY.ordinal }) })
 
     fun bind(snakeFrame: SnakeView) {
         println("Ready")

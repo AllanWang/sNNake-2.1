@@ -1,29 +1,31 @@
 package ca.allanwang.snnake
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import org.junit.Before
 
 /**
  * Created by Allan Wang on 2017-05-16.
  */
 class NeuralNetTest {
 
-    @Test
-    fun basicCreation() {
-        val net = NeuralNet(1, 2, 1, 1.0, 2.0, 3.0, 4.0)
-        val hidden = Matrix(1, 2, 1.0, 2.0)
-        val output = Matrix(2, 1, 3.0, 4.0)
-        assertEquals(hidden, net.hiddenWeightMatrix)
-        assertEquals(output, net.outputWeightMatrix)
+    lateinit var net: NeuralNet
+
+    @Before
+    fun init() {
+        net = NeuralNet(2, 3, 1,
+                1.0, 2.0, 3.0,
+                4.0, 5.0, 6.0,
+                -2.0,
+                3.0,
+                -4.0)
     }
 
-    //Helper tests
 
-    @Test
-    fun random() {
-        val rand = NeuralNet.randomValue()
-        assertTrue(rand <= 1)
-        assertTrue(rand >= -1)
-    }
+
+//    @Test
+//    fun propagateMax() {
+//        val actual = net.forwardPropagate(Matrix(4, 2, Double.MAX_VALUE))
+//        val expected = Matrix(4, 1,Double.MAX_VALUE)
+//        assertEquals(expected, actual, "Propagating max value matrix should result in a max value matrix")
+//    }
+
 }

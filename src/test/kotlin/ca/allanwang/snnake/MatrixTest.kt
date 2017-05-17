@@ -116,7 +116,30 @@ class MatrixTest {
         val result = Matrix(2, 4,
                 -3.0, -3.0, -3.0, -2.0,
                 -3.0, 0.0, 3.0, 1.0)
+        assertEquals(3, matrix.cols, "Matrix col count should be 3")
         assertEquals(result, matrix * threeSized, "Matrix multiplication failed")
+        assertEquals(2, matrix.rows, "Matrix row count should still be 2")
+        assertEquals(4, matrix.cols, "Matrix col count should now be 4")
+    }
+
+    @Test
+    fun timesConstant() {
+        val result = Matrix(2, 3,
+                2.0, 4.0, 6.0,
+                8.0, 10.0, 12.0)
+        assertEquals(result, matrix * 2.0, "Matrix scalar multiplication failed")
+    }
+
+    @Test
+    fun transpose() {
+        val orig = matrix.clone()
+        val transpose = matrix.transpose()
+        val result = Matrix(3, 2,
+                1.0, 4.0,
+                2.0, 5.0,
+                3.0, 6.0)
+        assertEquals(result, transpose, "Matrix transpose should mirror along y = -x")
+        assertNotEquals(orig, transpose, "Matrix transpose should not affect cloned matrix")
     }
 
     @Test
@@ -145,4 +168,5 @@ class MatrixTest {
     fun col() {
         assertEquals(doubleArrayOf(2.0, 5.0).contentToString(), matrix.col(1).contentToString(), "Second column is 2, 5")
     }
+
 }

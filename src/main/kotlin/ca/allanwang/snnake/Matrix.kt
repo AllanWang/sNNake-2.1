@@ -26,8 +26,10 @@ enum class Op {
 }
 
 class Matrix(var matrix: Array<DoubleArray>) {
-    val rows = matrix.size
-    val cols = matrix[0].size
+    val rows: Int
+        get() = matrix.size
+    val cols: Int
+        get() = matrix[0].size
 
     constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols) {
         if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch")
@@ -35,7 +37,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     }
 
     constructor(rows: Int, cols: Int) : this(rows, cols, 0.0)
-    constructor(rows: Int, cols: Int, value: Double) : this(Array(rows, { DoubleArray(cols, { _ -> value }) }))
+    constructor(rows: Int, cols: Int, value: Double) : this(Array(rows, { DoubleArray(cols, { value }) }))
 
     init {
         matrix.forEach {
@@ -45,7 +47,17 @@ class Matrix(var matrix: Array<DoubleArray>) {
         }
     }
 
+    fun set(m: Matrix): Matrix {
+        this.matrix = m.matrix
+        return this
+    }
+
+    fun fill(value: Double): Matrix {
+        return forEach { _ -> value }
+    }
+
     operator fun get(row: Int): DoubleArray = matrix[row]
+    operator fun get(row: Int, col: Int): Double = matrix[row][col]
 
     operator fun plus(m: Matrix): Matrix {
         Op.ADD.validateOrThrow(this, m)
@@ -58,6 +70,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
         Op.SUBTRACT.validateOrThrow(this, m)
         return this + (-m)
     }
+
+    /**
+     * Multiplies each cell by [d]
+     */
+    operator fun times(d: Double): Matrix = forEach { value -> value * d }
 
     operator fun times(m: Matrix): Matrix {
         Op.MULTIPLY.validateOrThrow(this, m)
@@ -79,18 +96,20 @@ class Matrix(var matrix: Array<DoubleArray>) {
     fun validate(op: Op, m: Matrix): Boolean = op.validate(this, m)
 
     fun transpose(): Matrix {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val orig = clone()
+        matrix = Array(cols, { y -> kotlin.DoubleArray(rows, { x -> orig[x][y] }) })
+        return this
     }
 
-    fun sigmoid(): Matrix = forEach { _, _, value -> NeuralNet.sigmoid(value) }
+    fun sigmoid(): Matrix = forEach { value -> NeuralNet.sigmoid(value) }
 
     fun row(i: Int): DoubleArray = if (i < 0 || i > rows) doubleArrayOf() else matrix[i].clone()
 
     fun col(i: Int): DoubleArray = if (i < 0 || i > cols) doubleArrayOf() else DoubleArray(rows, { j -> matrix[j][i] })
 
-    private fun forEach(mutation: (value: Double) -> Double): Matrix = forEach { _, _, value -> mutation(value) }
+    fun forEach(mutation: (value: Double) -> Double): Matrix = forEach { _, _, value -> mutation(value) }
 
-    private fun forEach(mutation: (y: Int, x: Int, value: Double) -> Double): Matrix {
+    fun forEach(mutation: (y: Int, x: Int, value: Double) -> Double): Matrix {
         matrix.forEachIndexed {
             y, row ->
             row.forEachIndexed {

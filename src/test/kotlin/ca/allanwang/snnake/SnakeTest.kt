@@ -29,7 +29,7 @@ class SnakeTest {
     @Before
     fun init() {
         snake = Snake(SnakeId._1, true, contract)
-        map = Array(gameHeight, { IntArray(gameWidth, { _ -> MapData.EMPTY.ordinal }) })
+        map = Array(gameHeight, { IntArray(gameWidth, {  MapData.EMPTY.ordinal }) })
     }
 
     @Test
