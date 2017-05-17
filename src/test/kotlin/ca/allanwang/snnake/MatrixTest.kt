@@ -78,6 +78,15 @@ class MatrixTest {
         assertEquals(result, matrix + toAdd, "Matrix subtraction should be cell by cell")
     }
 
+    //When we pass a matrix into a function, we should expect that matrix to remain unmodified from our operations
+    @Test
+    fun addInvulnerability() {
+        assertNotEquals(matrix, addSelf(matrix.clone()), "Matrix addition in function should not affect original if cloned")
+        assertEquals(matrix, addSelf(matrix), "Matrix addition in function should affect original if not cloned")
+    }
+
+    fun addSelf(m: Matrix): Matrix = m + m
+
     @Test
     fun negate() {
         val negation = Matrix(2, 3,

@@ -2,6 +2,14 @@ package ca.allanwang.snnake
 
 /**
  * Created by Allan Wang on 2017-05-15.
+ *
+ * [Matrix] holds a 2D double array, as well as executable operator functions for matrix manipulation
+ * Matrices are not immutable, but their operations will only affect the matrix that is being operated on
+ * Multiplication & transposition result in new matrix arrays, and
+ * Addition & subtraction will first deepClone the matrix before the operation
+ *
+ * It is therefore advisable for functions to clone a matrix before operating on it so that it is not affected elsewhere
+ * cloning is enough, as deepcloning is handled automatically when necessary
  */
 class MatrixException(message: String) : RuntimeException(message)
 
@@ -80,7 +88,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
         Op.MULTIPLY.validateOrThrow(this, m)
         val orig = clone()
         matrix = Array(rows, { DoubleArray(m.cols) })
-        forEach { y, x, _ -> multiply(y, x, orig, m) }
+        forEachNoClone { y, x, _ -> multiply(y, x, orig, m) }
         return this
     }
 
@@ -101,8 +109,6 @@ class Matrix(var matrix: Array<DoubleArray>) {
         return this
     }
 
-    fun sigmoid(): Matrix = forEach { value -> NeuralNet.sigmoid(value) }
-
     fun row(i: Int): DoubleArray = if (i < 0 || i > rows) doubleArrayOf() else matrix[i].clone()
 
     fun col(i: Int): DoubleArray = if (i < 0 || i > cols) doubleArrayOf() else DoubleArray(rows, { j -> matrix[j][i] })
@@ -110,6 +116,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
     fun forEach(mutation: (value: Double) -> Double): Matrix = forEach { _, _, value -> mutation(value) }
 
     fun forEach(mutation: (y: Int, x: Int, value: Double) -> Double): Matrix {
+        matrix = deepClone().matrix
+        return forEachNoClone(mutation)
+    }
+
+    private fun forEachNoClone(mutation: (y: Int, x: Int, value: Double) -> Double): Matrix {
         matrix.forEachIndexed {
             y, row ->
             row.forEachIndexed {
