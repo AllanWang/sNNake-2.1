@@ -17,24 +17,23 @@ enum class Activation {
     abstract fun activatePrime(value: Double): Double
 }
 
-class NeuralNet(inputSize: Int, hiddenSize: Int, outputSize: Int, var activation: Activation = Activation.SIGMOID) {
+class NeuralNet(vararg layerSizes: Int, var activation: Activation = Activation.SIGMOID) {
 
-    val hiddenWeightMatrix = Matrix(inputSize, hiddenSize).forEach { _ -> randomValue() }
-    val outputWeightMatrix = Matrix(hiddenSize, outputSize).forEach { _ -> randomValue() }
-    val inputSize: Int
-        get() = hiddenWeightMatrix.rows
-    val hiddenSize: Int
-        get() = hiddenWeightMatrix.cols
-    val outputSize: Int
-        get() = outputWeightMatrix.rows
+    val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> randomValue() } })
+    fun layerSize(i: Int) = matrices[i].rows
 
     fun setWeights(vararg values: Double) {
-        if (values.size != hiddenSize * (inputSize + outputSize))
-            throw NeuralNetException(String.format("Neural Net values size mismatch; expecting %d doubles, but only found %d", hiddenSize * (inputSize + outputSize), values.size))
-        val hiddenWeights = values.asList().subList(0, inputSize * hiddenSize).toDoubleArray()
-        val outputWeights = values.asList().subList(inputSize * hiddenSize, values.size).toDoubleArray()
-        hiddenWeightMatrix.set(Matrix(inputSize, hiddenSize, *hiddenWeights))
-        outputWeightMatrix.set(Matrix(hiddenSize, outputSize, *outputWeights))
+        val iter = values.iterator()
+        matrices.forEach {
+            matrix ->
+            matrix.forEach { _ -> if (iter.hasNext()) iter.nextDouble() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") }
+        }
+        if (iter.hasNext()) throw NeuralNetException("Too many weights given in setWeights")
+    }
+
+    fun setWeights(index: Int, vararg values: Double) {
+        val iter = values.iterator()
+        matrices[index].forEach { _ -> if (iter.hasNext()) iter.nextDouble() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") }
     }
 
     /**
@@ -48,24 +47,27 @@ class NeuralNet(inputSize: Int, hiddenSize: Int, outputSize: Int, var activation
      * Activity = input * weight matrix
      * Activation = input * sigmoid
      */
-    fun forwardPropagate(input: Matrix): Pair<Pair<Matrix, Matrix>, Pair<Matrix, Matrix>> {
-        val hiddenActivity = input.clone() * hiddenWeightMatrix
-        val hiddenActivation = hiddenActivity.clone().sigmoid()
-        val outputActivity = hiddenActivation.clone() * outputWeightMatrix
-        val outputActivation = outputActivity.clone().sigmoid()
-        ((input * hiddenWeightMatrix).sigmoid() * outputWeightMatrix).sigmoid()
-        return Pair(Pair(hiddenActivity, hiddenActivation), Pair(outputActivity, outputActivation))
+    fun forwardPropagate(input: Matrix): MutableList<Pair<Matrix, Matrix>> {
+        val list = mutableListOf<Pair<Matrix, Matrix>>()
+        val data = input.clone()
+        matrices.forEach {
+            matrix ->
+            val activity = (data * matrix).clone()
+            val activation = activity.clone().sigmoid()
+            list.add(Pair(activity, activation))
+        }
+        return list
     }
 
     fun costFunctionPrime(input: Matrix) {
         val resultData = forwardPropagate(input.clone())
     }
 
-    override fun equals(other: Any?): Boolean = (other is NeuralNet && hiddenWeightMatrix == other.hiddenWeightMatrix && outputWeightMatrix == other.outputWeightMatrix)
+    override fun equals(other: Any?): Boolean = (other is NeuralNet && matrices contentDeepEquals other.matrices)
 
-    override fun hashCode(): Int = hiddenWeightMatrix.hashCode() + outputWeightMatrix.hashCode()
+    override fun hashCode(): Int = matrices.contentDeepHashCode()
 
-    override fun toString(): String = hiddenWeightMatrix.toString() + outputWeightMatrix.toString()
+    override fun toString(): String = matrices.contentToString()
 
     companion object {
         /**
@@ -77,5 +79,4 @@ class NeuralNet(inputSize: Int, hiddenSize: Int, outputSize: Int, var activation
 
         fun sigmoidPrime(value: Double): Double = Math.pow(Math.E, -value) / Math.pow(1.0 + Math.pow(Math.E, -value), 2.0)
     }
-}
 }
