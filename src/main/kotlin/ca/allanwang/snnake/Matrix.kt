@@ -67,6 +67,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
     operator fun get(row: Int): DoubleArray = matrix[row]
     operator fun get(row: Int, col: Int): Double = matrix[row][col]
 
+    fun sumRows(): Matrix {
+        matrix = Array(1, { DoubleArray(cols, { i -> col(i).sum() }) })
+        return this
+    }
+
     operator fun plus(m: Matrix): Matrix {
         Op.ADD.validateOrThrow(this, m)
         return forEach { y, x, value -> value + m[y][x] }
@@ -128,11 +133,6 @@ class Matrix(var matrix: Array<DoubleArray>) {
                 matrix[y][x] = mutation(y, x, v)
             }
         }
-        return this
-    }
-
-    private fun mismatch(key: String, m: Matrix): Matrix {
-        println(String.format("%s: size mismatch, %d x %d & %d x %d", key, rows, cols, m.rows, m.cols))
         return this
     }
 

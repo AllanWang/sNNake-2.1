@@ -70,6 +70,15 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
     }
 
     /**
+     * Passes input forward and computes cost difference
+     * Sigma 0.5 * (y - yHat)^2
+     */
+    fun costFunction(input: Matrix, output: Matrix): Matrix {
+        val result = forward(input).last().second
+        return result.minus(output).forEach { value -> 0.5 * Math.pow(value, 2.0) }.sumRows()
+    }
+
+    /**
      * Computes the partial costs for each layer
      *
      * Let J by our cost, y be our actual output, and yHat be our calculated output
