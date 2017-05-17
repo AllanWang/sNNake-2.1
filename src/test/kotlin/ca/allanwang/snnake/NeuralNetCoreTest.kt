@@ -1,8 +1,9 @@
 package ca.allanwang.snnake
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.fail
 
 /**
  * Created by Allan Wang on 2017-05-16.
@@ -13,11 +14,32 @@ class NeuralNetCoreTest {
 
     @Test
     fun basicCreation() {
-        val net = NeuralNet(1, 2, 1, 1.0, 2.0, 3.0, 4.0)
+        val net = NeuralNet(1, 2, 1)
+                .setWeights(1.0, 2.0, 3.0, 4.0)
         val hidden = Matrix(1, 2, 1.0, 2.0)
         val output = Matrix(2, 1, 3.0, 4.0)
-        assertEquals(hidden, net.hiddenWeightMatrix)
-        assertEquals(output, net.outputWeightMatrix)
+        assertEquals(hidden, net[0])
+        assertEquals(output, net[1])
+    }
+
+    @Test
+    fun notEnoughWeights() {
+        try {
+            NeuralNet(1, 2, 1).setWeights(1.0, 2.0, 3.0)
+            fail("Did not catch too few variables in setWeights")
+        } catch (e: NeuralNetException) {
+            assertEquals("Could not set weights for all matrices; size mismatch", e.message)
+        }
+    }
+
+    @Test
+    fun tooManyWeights() {
+        try {
+            NeuralNet(1, 2, 1).setWeights(1.0, 2.0, 3.0, 4.0, 5.0)
+            fail("Did not catch too many variables in setWeights")
+        } catch (e: NeuralNetException) {
+            assertEquals("Too many weights given in setWeights", e.message)
+        }
     }
 
     //Helper tests
@@ -31,32 +53,32 @@ class NeuralNetCoreTest {
 
     @Test
     fun sigmoidMax() {
-        assertEquals("Sigmoid(max) == 1", 1.0, NeuralNet.sigmoid(Double.MAX_VALUE), 0.001)
+        assertDoubleEquals(1.0, Activator.SIGMOID.activate(Double.MAX_VALUE), "Sigmoid(max) == 1")
     }
 
     @Test
     fun sigmoidMin() {
-        assertEquals("Sigmoid(min) == 0", 0.0, NeuralNet.sigmoid(-Double.MAX_VALUE), 0.001)
+        assertDoubleEquals(0.0, Activator.SIGMOID.activate(-Double.MAX_VALUE), "Sigmoid(min) == 0")
     }
 
     @Test
     fun sigmoidZero() {
-        assertEquals("Sigmoid(0) == 0.5", 0.5, NeuralNet.sigmoid(0.0), 0.001)
+        assertDoubleEquals(0.5, Activator.SIGMOID.activate(0.0), "Sigmoid(0) == 0.5")
     }
 
     @Test
     fun sigmoidPrimeMax() {
-        assertEquals("Sigmoid'(max) == 0", 0.0, NeuralNet.sigmoidPrime(Double.MAX_VALUE), 0.001)
+        assertDoubleEquals(0.0, Activator.SIGMOID.activatePrime(Double.MAX_VALUE), "Sigmoid'(max) == 0")
     }
 
     //Exponents get too big to compute, but -99 serves its purpose
     @Test
     fun sigmoidPrimeMin() {
-        assertEquals("Sigmoid'(min) == 0", 0.0, NeuralNet.sigmoidPrime(-99.0), 0.001)
+        assertDoubleEquals(0.0, Activator.SIGMOID.activatePrime(-99.0), "Sigmoid'(min) == 0")
     }
 
     @Test
     fun sigmoidPrimeZero() {
-        assertEquals("Sigmoid'(0) == 0.5", 0.25, NeuralNet.sigmoidPrime(0.0), 0.001)
+        assertDoubleEquals(0.25, Activator.SIGMOID.activatePrime(0.0), "Sigmoid'(0) == 0.5")
     }
 }

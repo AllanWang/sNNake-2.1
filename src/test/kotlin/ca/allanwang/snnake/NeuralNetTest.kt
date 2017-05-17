@@ -11,8 +11,8 @@ class NeuralNetTest {
 
     @Before
     fun init() {
-        net = NeuralNet(2, 3, 1,
-                1.0, 2.0, 3.0,
+        net = NeuralNet(2, 3, 1)
+                .setWeights(1.0, 2.0, 3.0,
                 4.0, 5.0, 6.0,
                 -2.0,
                 3.0,
@@ -23,7 +23,7 @@ class NeuralNetTest {
 
 //    @Test
 //    fun propagateMax() {
-//        val actual = net.forwardPropagate(Matrix(4, 2, Double.MAX_VALUE))
+//        val actual = net.forward(Matrix(4, 2, Double.MAX_VALUE))
 //        val expected = Matrix(4, 1,Double.MAX_VALUE)
 //        assertEquals(expected, actual, "Propagating max value matrix should result in a max value matrix")
 //    }
