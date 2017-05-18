@@ -18,10 +18,13 @@ enum class Op {
         override fun validate(m: Matrix, n: Matrix) = m.rows == n.rows && m.cols == n.cols
     },
     SUBTRACT {
-        override fun validate(m: Matrix, n: Matrix) = m.rows == n.rows && m.cols == n.cols
+        override fun validate(m: Matrix, n: Matrix) = ADD.validate(m, n)
     },
     MULTIPLY {
         override fun validate(m: Matrix, n: Matrix) = m.cols == n.rows
+    },
+    SCALAR_MULTIPLY {
+        override fun validate(m: Matrix, n: Matrix) = ADD.validate(m, n)
     };
 
     abstract fun validate(m: Matrix, n: Matrix): Boolean
@@ -99,13 +102,10 @@ class Matrix(var matrix: Array<DoubleArray>) {
     operator fun get(row: Int): DoubleArray = matrix[row]
     operator fun get(row: Int, col: Int): Double = matrix[row][col]
 
-    fun toArray(): DoubleArray {
-        var array = doubleArrayOf()
-        matrix.forEach {
-            row ->
-            array += row
-        }
-        return array
+    fun toList(): List<Double> {
+        val list = mutableListOf<Double>()
+        matrix.forEach { row -> list.addAll(row.toList()) }
+        return list
     }
 
     fun sumRows(): Matrix {
@@ -124,7 +124,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     operator fun minus(m: Matrix): Matrix {
         Op.SUBTRACT.validateOrThrow(this, m)
-        return this + (-m)
+        return this + (-(m.clone()))
     }
 
     operator fun minus(d: Double): Matrix = forEach { value -> value - d }
@@ -149,6 +149,16 @@ class Matrix(var matrix: Array<DoubleArray>) {
             result += value * n[i][col]
         }
         return result
+    }
+
+    /**
+     * Takes in m x n & m x n
+     * Multiplies cell[i][j] from both matrices together
+     */
+    fun scalarMultiply(m: Matrix): Matrix {
+        Op.SCALAR_MULTIPLY.validateOrThrow(this, m)
+        forEachNoClone { y, x, value -> value * m[y][x] }
+        return this
     }
 
     operator fun div(d: Double): Matrix = forEach { value -> value / d }
@@ -238,5 +248,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     companion object {
         val EMPTY: Matrix = Matrix(0, 0)
+
+        fun toList(array: Array<Matrix>): List<Double> {
+            val list = mutableListOf<Double>()
+            array.forEach { matrix -> list.addAll(matrix.toList()) }
+            return list
+        }
     }
 }

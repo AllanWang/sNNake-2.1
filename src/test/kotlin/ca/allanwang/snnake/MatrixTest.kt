@@ -49,9 +49,13 @@ class MatrixTest {
         assertEquals(matrix, dup, "Matrix constructor by varargs should match main")
     }
 
+    /**
+     * Each number is printed with 12 characters by default
+     * If number is not negative, a space will be prepended (so in this case you only see 11 characters including the decimal)
+     */
     @Test
     fun string() {
-        assertEquals("| 1.0 2.0 3.0 |\n| 4.0 5.0 6.0 |", matrix.toString().trim(), "Matrix should print row by row")
+        assertEquals("|  1.000000000  2.000000000  3.000000000 |\n|  4.000000000  5.000000000  6.000000000 |", matrix.toString().trim(), "Matrix should print row by row")
     }
 
     @Test

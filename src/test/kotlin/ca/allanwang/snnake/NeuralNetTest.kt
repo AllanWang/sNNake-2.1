@@ -41,8 +41,8 @@ class NeuralNetTest {
     @Test
     fun getSetFunction() {
         val data = net.getWeights()
-        net.setWeights(*data)
-        assertTrue(data contentEquals net.getWeights(), "Get then set should yield the same data")
+        net.setWeights(data)
+        assertTrue(data == net.getWeights(), "Get then set should yield the same data")
     }
 
 }

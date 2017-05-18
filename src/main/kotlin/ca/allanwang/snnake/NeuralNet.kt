@@ -45,30 +45,28 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
 
     operator fun get(i: Int): Matrix = matrices[i]
 
-    fun setWeights(vararg values: Double): NeuralNet {
+    fun setWeights(values: List<Double>): NeuralNet {
         val iter = values.iterator()
-        matrices.forEach {
-            matrix ->
-            matrix.forEach { _ -> if (iter.hasNext()) iter.nextDouble() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") }
-        }
+        matrices.forEach { matrix -> matrix.forEach { _ -> if (iter.hasNext()) iter.next() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") } }
         if (iter.hasNext()) throw NeuralNetException("Too many weights given in setWeights")
         return this
     }
 
-    fun getWeights(): DoubleArray {
-        var weights = doubleArrayOf()
-        matrices.forEach {
-            matrix ->
-            weights += matrix.toArray()
-        }
+    fun setWeights(vararg values: Double): NeuralNet = setWeights(values.toList())
+
+    fun getWeights(): List<Double> {
+        val weights = mutableListOf<Double>()
+        matrices.forEach { matrix -> weights.addAll(matrix.toList()) }
         return weights
     }
 
-    fun setWeights(index: Int, vararg values: Double): NeuralNet {
+    fun setWeights(index: Int, values: List<Double>): NeuralNet {
         val iter = values.iterator()
-        matrices[index].forEach { _ -> if (iter.hasNext()) iter.nextDouble() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") }
+        matrices[index].forEach { _ -> if (iter.hasNext()) iter.next() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") }
         return this
     }
+
+    fun setWeights(index: Int, vararg values: Double): NeuralNet = setWeights(index, values.toList())
 
     /**
      * Propagates [input] data through the neural net and returns the outputs at each stage
@@ -78,8 +76,9 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
      * Returned value contains a list of matrix pairs
      * The list starts with a pair for the first hidden layer and continues all the way until the output layer
      * Within those pairs, the first matrix is the activation matrix and the second matrix is the activity matrix
-     * Activation   (z) = input * weight matrix
-     * Activity     (a) = input * activator function
+     * Activation   (z) = data * weight matrix
+     * Activity     (a) = data * activator function
+     * Data             = input at first, then activity
      *
      * Note that the very last activated matrix is our output/estimate
      */
@@ -88,7 +87,7 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
         val data = input.clone()
         matrices.forEach {
             matrix ->
-            val activity = (data * matrix).clone() //ensure this activity no longer changes; data however will be affected cumulatively
+            val activity = (data * matrix).clone()
             val activation = activity.clone().forEach(activator.activate)
             list.add(Pair(activity, activation))
             data.set(activation)
@@ -108,28 +107,33 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
     /**
      * Computes the partial costs for each layer
      *
-     * Let J by our cost, y be our actual output, and yHat be our calculated output
-     * For each i in 0..max, where max = # of layers - 1, delta(J_i)/delta(W_i) = (a_i)^T * (-y - yHat) * f'(z_(i+1))
+     * Let J by our cost, x be our input, y be our actual output, and yHat be our calculated output
+     * We may note from forward propagation that we have activations (z) & activities (a) from 2..max, where max = # of layers
+     * Note that the a_max = our output yHat, and that a_1, which doesn't exist, is really our input x
+     * For each i in 1..max, where max = # of layers - 1, delta(J)/delta(W_i) = -(y - yHat) * delta(yHat)/delta(W_i)
+     * Note that delta(yHat)/delta(W_i) = delta(a_max)/delta(z_max) * delta(z_max)/delta(W_i)
+     * The first fraction becomes f'(z_max)
+     * The second fraction can be split using the chain rule into the following components:
+     * delta(z_k)/delta(w_{k-1})    which equals    a_{k-1}         note that z_k = a_{k-1} * w_{k-1}
+     * delta(z_k)/delta(a_{k-1})    which equals    w_{k-1}^T
+     * delta(a_k)/delta(z_k)        which equals    f'(z_k), where f' is the activatePrime function
      *
-     * Within our forward propagation list, we have activities (a) and activations (z) from 1..max + 1
-     * We don't have a_0 in that list, but it is actually our output matrix. z_0 does not exist and is not used
+     * We may observe the following pattern: delta(z_max)/delta(W_i) = W_{max-1}^T * f'(z_{max-1}) * ... * W_{i+1}^T * f'(z_{i+1}) * a_i
+     * We may reuse the portion from max to i + 1 by saving it as a delta
+     * Every subsequent step will be (delta scalarMultiply W_k) times z_k, then cost = (a_1^T times delta)
      *
-     * We see that -(y - yHat) is used within each iteration, so we may assign that to a matrix diff
-     * We start with i in max downTo 0, so we may reverse the list from [forward] and also append our input as a_0
-     * For the sake of pairing, z_0 will be a blank matrix of size 1
-     *
-     * We will iterate through each i to calculate the cost deltas, and add them to our list.
-     * We will then reverse the list to retain input to output order
      */
     fun costFunctionPrime(input: Matrix, output: Matrix): MutableList<Matrix> {
         val costList = mutableListOf<Matrix>()
         val resultData = forward(input)
-        resultData.reverse()
-        resultData.add(Pair(Matrix(1, 1), input.clone()))
-        val diff = -(output.clone() - resultData.first().second)  // -(y - yHat), where yHat = a_last
-        resultData.forEach {
-            pair ->
-            costList.add(pair.second.transpose() * (diff.clone().forEach(activator.activatePrime)))
+        resultData.add(0, Pair(Matrix.EMPTY, input.clone()))
+        var delta = Matrix.EMPTY
+        for (i in resultData.size - 1 downTo 1) {
+            val pair = resultData[i]
+            if (i == resultData.size - 1) delta = (-(output.clone() - pair.second))   // -(y - yHat)
+            else (delta * matrices[i].clone().transpose())                      // delta * W^T
+            delta.scalarMultiply(pair.first.forEach(activator.activatePrime))   // delta x f'(z)
+            costList.add(resultData[i - 1].second.transpose() * delta)                       // a^T * delta
         }
         costList.reverse()
         return costList
