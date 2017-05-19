@@ -12,13 +12,14 @@ import java.util.Random
 class NNGeneticsException(message: String) : RuntimeException(message)
 
 class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, val mutationRate: Double = 0.2, val mutationsPerList: Int = 2, crossPoints: IntArray = intArrayOf(2)) {
-    var generation = 1
+    var generation = 0
+        private set
     private val resourceBase: String = javaClass.classLoader?.getResource("/")?.file ?: javaClass.getResource("/")!!.file
     val bestFile = file(resourceBase, "$key/$key.best.txt")
     val populationFile = file(resourceBase, "$key/$key.population.txt")
     val populationMap = hashMapOf<List<Double>, Int>()
     private val rnd = Random()
-    lateinit var fileIter: Iterator<Double> //TODO
+    lateinit var dataIter: Iterator<List<Double>> //TODO
     val crossPoints: IntArray
 
     init {
@@ -85,7 +86,7 @@ class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, 
     fun setFitnessOfCurrent(fitness: Int) {
         populationMap.put(net.getWeights(), fitness)
         if (populationMap.size >= generationSize) updateGeneration()
-        else if (fileIter.hasNext()) net.setWeights(fileIter.next())
+        else if (dataIter.hasNext()) net.setWeights(dataIter.next())
         else {
             //TODO
         }
@@ -117,7 +118,14 @@ class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, 
             }
         }
         writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)}") }
+    }
+
+    fun runGeneration() {
+        val bestData = read(bestFile)
+        if (bestData.last().second != -1) generation = bestData.last().second
         generation++
+        val populationData = read(populationFile)
+        dataIter = read(populationFile).map { pair -> pair.first }.iterator()
     }
 
     internal fun listToString(list: List<Double>): String {

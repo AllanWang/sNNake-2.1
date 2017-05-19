@@ -45,6 +45,9 @@ class NeuralNetFunctionTest {
     fun forward() = verify({ x -> net.forward(x) })
 
     @Test
+    fun output() = verify({ x -> net.output(x) })
+
+    @Test
     fun costFunction() = verify({ x, y -> net.costFunction(x, y) }, addSub)
 
     @Test

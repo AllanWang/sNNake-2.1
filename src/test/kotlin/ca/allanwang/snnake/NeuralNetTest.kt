@@ -23,12 +23,14 @@ class NeuralNetTest {
     }
 
 
-//    @Test
-//    fun propagateMax() {
-//        val actual = net.forward(Matrix(4, 2, Double.MAX_VALUE))
-//        val expected = Matrix(4, 1,Double.MAX_VALUE)
-//        assertEquals(expected, actual, "Propagating max value matrix should result in a max value matrix")
-//    }
+    @Test
+    fun forwardAndOutput() {
+        val input = Matrix(3, 2,
+                3, 5,
+                5, 1,
+                10, 2)
+        assertEquals(net.forward(input).last().second, net.output(input), "Last forward activity should equal output")
+    }
 
     @Test
     fun costFunction() {

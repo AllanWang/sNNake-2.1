@@ -68,11 +68,20 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
     }
 
     /**
+     * Duplicate of [forward], but only outputs the last activity, or the calculated output
+     */
+    fun output(input: Matrix): Matrix {
+        val data = input.clone()
+        matrices.forEach { matrix -> (data * matrix).forEach(activator.activate) }
+        return data
+    }
+
+    /**
      * Passes input forward and computes cost difference
      * Sigma 0.5 * (y - yHat)^2
      */
     fun costFunction(input: Matrix, output: Matrix): Matrix {
-        val result = forward(input).last().second
+        val result = output(input)
         return result.minus(output.clone()).forEach { value -> 0.5 * Math.pow(value, 2.0) }.sumRows()
     }
 
