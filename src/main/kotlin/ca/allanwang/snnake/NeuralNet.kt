@@ -3,38 +3,9 @@ package ca.allanwang.snnake
 /**
  * Created by Allan Wang on 2017-05-15.
  */
-class NeuralNetException(message: String) : RuntimeException(message)
-
-enum class Activator {
-    SIGMOID {
-        override val activate: (value: Double) -> Double = { 1.0 / (1.0 + Math.exp(-it)) }
-        override val activatePrime: (value: Double) -> Double = { Math.exp(-it) / Math.pow(1.0 + Math.exp(-it), 2.0) }
-    };
-
-    abstract val activate: (value: Double) -> Double
-    abstract val activatePrime: (value: Double) -> Double
-}
-
-enum class Random {
-    /**
-     * Returns random number between -1 & 1
-     */
-    ABS_ONE {
-        override fun random(): Double = java.util.Random().nextDouble() * 2 - 1
-    },
-    /**
-     * Returns random numbers with a mean of 0.0 and a stdev of 1.0; same as numpy.random.randn
-     */
-    GAUSSIAN {
-        override fun random(): Double = java.util.Random().nextGaussian()
-    };
-
-    abstract fun random(): Double
-}
-
 class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIGMOID, var random: Random = Random.GAUSSIAN) {
 
-    val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> random.random() } })
+    val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> randomWeight() } })
     fun layerSize(i: Int) = matrices[i].rows
     val inputSize: Int
         get() = matrices.first().rows
@@ -45,6 +16,10 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
 
     operator fun get(i: Int): Matrix = matrices[i]
 
+    fun randomWeight() = random.random()
+
+    fun setWeights(vararg values: Int): NeuralNet = setWeights(*DoubleArray(values.size, { i -> values[i].toDouble() }))
+    fun setWeights(vararg values: Double): NeuralNet = setWeights(values.toList())
     fun setWeights(values: List<Double>): NeuralNet {
         val iter = values.iterator()
         matrices.forEach { matrix -> matrix.forEach { _ -> if (iter.hasNext()) iter.next() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") } }
@@ -52,21 +27,18 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
         return this
     }
 
-    fun setWeights(vararg values: Double): NeuralNet = setWeights(values.toList())
-
     fun getWeights(): List<Double> {
         val weights = mutableListOf<Double>()
         matrices.forEach { matrix -> weights.addAll(matrix.toList()) }
         return weights
     }
 
-    fun setWeights(index: Int, values: List<Double>): NeuralNet {
+    fun setWeightsAt(index: Int, vararg values: Double): NeuralNet = setWeightsAt(index, values.toList())
+    fun setWeightsAt(index: Int, values: List<Double>): NeuralNet {
         val iter = values.iterator()
         matrices[index].forEach { _ -> if (iter.hasNext()) iter.next() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") }
         return this
     }
-
-    fun setWeights(index: Int, vararg values: Double): NeuralNet = setWeights(index, values.toList())
 
     /**
      * Propagates [input] data through the neural net and returns the outputs at each stage
@@ -129,14 +101,22 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
         resultData.add(0, Pair(Matrix.EMPTY, input.clone()))
         var delta = Matrix.EMPTY
         for (i in resultData.size - 1 downTo 1) {
-            val pair = resultData[i]
-            if (i == resultData.size - 1) delta = (-(output.clone() - pair.second))   // -(y - yHat)
-            else (delta * matrices[i].clone().transpose())                      // delta * W^T
-            delta.scalarMultiply(pair.first.forEach(activator.activatePrime))   // delta x f'(z)
-            costList.add(resultData[i - 1].second.transpose() * delta)                       // a^T * delta
+            if (i == resultData.size - 1) delta = (-(output.clone() - resultData[i].second))    // -(y - yHat)
+            else (delta * matrices[i].clone().transpose())                                      // delta * W^T
+            delta.scalarMultiply(resultData[i].first.forEach(activator.activatePrime))          // delta x f'(z)
+            costList.add(resultData[i - 1].second.transpose() * delta)                          // a^T * delta
         }
         costList.reverse()
         return costList
+    }
+
+    /**
+     * Calculates cost function prime, then ravels and concatenates the resulting matrices
+     */
+    fun computeGradients(input: Matrix, output: Matrix): List<Double> {
+        val grad = mutableListOf<Double>()
+        costFunctionPrime(input, output).forEach { matrix -> grad.addAll(matrix.toList()) }
+        return grad
     }
 
     override fun equals(other: Any?): Boolean = (other is NeuralNet &&

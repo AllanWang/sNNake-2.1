@@ -38,21 +38,12 @@ class NumericalGradientCheck {
     @Test
     fun numericalGradientCheck() {
         val numgrad = Matrix.toList(computeNumericalGradient())
-        val grad = Matrix.toList(computeGradients())
+        val grad = net.computeGradients(x, y)
         assertTrue(verifyEqual(grad, numgrad), "Numerical Gradient Check did not match for grad & numgrad")
     }
 
     fun verifyEqual(grad: List<Double>, numgrad: List<Double>): Boolean =
             if (grad.size != numgrad.size) false else (0..grad.size - 1).asSequence().all { i -> Math.abs(grad[i] - numgrad[i]) < 1e-8 }
-
-    fun computeGradients(): Array<Matrix> {
-        val grad = mutableListOf<Matrix>()
-        net.costFunctionPrime(x, y).forEach {
-            matrix ->
-            grad.add(matrix)
-        }
-        return grad.toTypedArray()
-    }
 
     fun computeNumericalGradient(): Array<Matrix> {
         val weights = net.getWeights().toDoubleArray()
