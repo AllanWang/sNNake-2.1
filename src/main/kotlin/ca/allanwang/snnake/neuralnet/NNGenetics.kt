@@ -1,25 +1,34 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 import java.io.PrintWriter
-import java.util.Random
 
 /**
  * Created by Allan Wang on 2017-05-18.
  */
 class NNGeneticsException(message: String) : RuntimeException(message)
 
-class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, val mutationRate: Double = 0.2, val mutationsPerList: Int = 2, crossPoints: IntArray = intArrayOf(2)) {
+class NNGenetics(key: String,
+                 val net: NeuralNet,
+                 val populationSize: Int = 100,
+                 val populationRetention: Double = 0.2,
+                 val mutationRate: Double = 0.2,
+                 val mutationsPerList: Int = 2,
+                 val mutationIncrement: Double = 1e-4,
+                 val iterations: Int = 3,
+                 crossPoints: IntArray = intArrayOf(2)) {
+
     var generation = 0
         private set
-    private val resourceBase: String = javaClass.classLoader?.getResource("/")?.file ?: javaClass.getResource("/")!!.file
-    val bestFile = file(resourceBase, "$key/$key.best.txt")
-    val populationFile = file(resourceBase, "$key/$key.population.txt")
-    val populationMap = hashMapOf<List<Double>, Int>()
-    private val rnd = Random()
-    lateinit var dataIter: Iterator<List<Double>> //TODO
+    private val iterationList = mutableListOf<Double>()
+    private val resourceBase: String = javaClass.getResource("/")?.file ?: throw NNGeneticsException("Resource base not found")
+    internal val bestFile = file(resourceBase, "$key/$key.best.txt")
+    internal val populationFile = file(resourceBase, "$key/$key.population.txt")
+    internal val populationMap = hashMapOf<List<Double>, Double>()
+    private val rnd = java.util.Random()
+    lateinit var dataIter: Iterator<List<Double>>
     val crossPoints: IntArray
 
     init {
@@ -29,20 +38,19 @@ class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, 
         if (crossPointList.first() < 0) throw NNGeneticsException("Crosspoints are indices and cannot be less than 0; cross ${crossPointList.first()} found")
         if (crossPointList.first() != 0) crossPointList.add(0, 0)
         this.crossPoints = crossPointList.toIntArray()
-        if (generationSize < 0) throw NNGeneticsException("generationSize should be greater than 0; currently $generationSize")
+        if (populationSize < 0) throw NNGeneticsException("populationSize should be greater than 0; currently $populationSize")
+        prepareGeneration()
     }
 
-    fun setWeights(values: List<Double>): NNGenetics {
-        net.setWeights(values)
-        return this
-    }
+    fun getOutput(input: Matrix) = net.output(input)
+    internal fun setWeights() = if (dataIter.hasNext()) net.setWeights(dataIter.next()) else net.setRandomWeights()
 
     /**
      * Given parents [first] & [second] of the same length
      * As well as [crossPoints] ranging from 0 to first.size inclusive,
      * Will generate a list of equal size by combining sublists of both parents based on the crossPoints, starting with the first parent
      */
-    fun crossover(first: List<Double>, second: List<Double>, verify: Boolean = false): MutableList<Double> {
+    internal fun crossover(first: List<Double>, second: List<Double>, verify: Boolean = false): MutableList<Double> {
         if (verify) {
             if (first.size != second.size) throw NNGeneticsException("Crossover parents do not have the same size: ${first.size}, ${second.size}")
             if (first.size != net.weightCount) throw NNGeneticsException("Crossover parent size does not match weight count: ${first.size}, ${net.weightCount}")
@@ -67,43 +75,45 @@ class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, 
      * The first crossover starts with the first parent
      * The second crossover starts with the second parent
      */
-    fun breed(first: List<Double>, second: List<Double>): Pair<MutableList<Double>, MutableList<Double>> = Pair(crossover(first, second, true), crossover(second, first))
+    internal fun breed(first: List<Double>, second: List<Double>): Pair<MutableList<Double>, MutableList<Double>> = Pair(crossover(first, second, true), crossover(second, first))
 
     /**
      * Given [list], will swap [mutationsPerList] number of items with numbers generated from [rand]
      */
-    fun mutate(list: MutableList<Double>) {
+    internal fun mutate(list: MutableList<Double>) {
         val set = hashSetOf<Int>()
         while (set.size < mutationsPerList)
             set.add(rand(list))
-        set.forEach { i -> list[i] = rand() }
+        set.forEach { i -> list[i] = if (Random.ONE.random() < 0.0) rand() else list[i] + Random.ONE.random() * mutationIncrement }
     }
 
     /**
      * Adds entry in [populationMap] with the current weights as the key and [fitness] as the value
      * Either updates the generation, sets new weights, or exits depending on count
      */
-    fun setFitnessOfCurrent(fitness: Int) {
-        populationMap.put(net.getWeights(), fitness)
-        if (populationMap.size >= generationSize) updateGeneration()
-        else if (dataIter.hasNext()) net.setWeights(dataIter.next())
-        else {
-            //TODO
+    fun setFitnessOfCurrent(fitness: Double) {
+        iterationList.add(fitness)
+        if (iterationList.size >= iterations) {
+            val aveFitness = iterationList.sum() / iterationList.size
+            iterationList.clear()
+            populationMap.put(net.getWeights(), aveFitness)
+            if (populationMap.size >= populationSize) updateGeneration()
+            else setWeights()
         }
     }
 
-    fun updateGeneration() {
+    internal fun updateGeneration() {
         val maxEntry = populationMap.maxBy { it.value }
         var best: MutableList<List<Double>> = mutableListOf(*populationMap.keys.toTypedArray())
         best.sortBy { list -> populationMap[list] }     // sort by fitness
-        best = best.subList(best.size / 2, best.size)   // get the better half
+        best = best.subList((best.size.toDouble() * (1 - populationRetention)).toInt(), best.size)   // get the better sublist
         populationMap.clear()
         clearFile(populationFile)
         //generate new population data
         writer(populationFile).use {
             w ->
             var count = 0
-            while (count < generationSize) {
+            while (count < populationSize) {
                 val first = best[rand(best)]
                 var second: List<Double>
                 do {
@@ -117,15 +127,18 @@ class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, 
                 count += 2
             }
         }
-        writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)}") }
+        writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)} # ${maxEntry.value}") }
+        prepareGeneration()
     }
 
-    fun runGeneration() {
-        val bestData = read(bestFile)
-        if (bestData.last().second != -1) generation = bestData.last().second
+    internal fun prepareGeneration() {
+        if (generation == 0) {
+            val bestData = read(bestFile)
+            if (bestData.isNotEmpty() && bestData.last().second != -1) generation = bestData.last().second
+        }
         generation++
-        val populationData = read(populationFile)
         dataIter = read(populationFile).map { pair -> pair.first }.iterator()
+        setWeights()
     }
 
     internal fun listToString(list: List<Double>): String {
@@ -163,6 +176,7 @@ class NNGenetics(key: String, val net: NeuralNet, val generationSize: Int = 20, 
                     generation = split[0].trim().toInt()
                     line = split[1]
                 }
+                if (line.contains('#')) line = line.split('#')[0]
                 list.add(Pair(stringToList(line), generation))
             }
         }

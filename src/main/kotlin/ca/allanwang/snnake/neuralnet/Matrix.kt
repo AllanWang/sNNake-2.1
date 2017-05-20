@@ -1,4 +1,4 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 /**
  * Created by Allan Wang on 2017-05-15.
@@ -19,13 +19,14 @@ class Matrix(var matrix: Array<DoubleArray>) {
     val size: Int
         get() = rows * cols
 
-    constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols) {
-        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch")
+    constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols, values.toList())
+    constructor(rows: Int, cols: Int,  values: List<Double>) : this(rows, cols) {
+        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch: $rows by $cols with ${values.size} values")
         forEach { y, x, _ -> values[y * cols + x] }
     }
 
     constructor(rows: Int, cols: Int, vararg values: Int) : this(rows, cols) {
-        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch")
+        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch: $rows by $cols with ${values.size} values")
         forEach { y, x, _ -> values[y * cols + x].toDouble() }
     }
 

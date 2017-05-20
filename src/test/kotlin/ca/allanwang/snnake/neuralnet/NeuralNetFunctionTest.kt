@@ -1,4 +1,4 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 import org.junit.Before
 import org.junit.Test
@@ -25,7 +25,7 @@ class NeuralNetFunctionTest {
                 10, 2)
         addSub = Matrix(3, 2, 75, 82, 93, 33, 12, 23)
         mult = Matrix(2, 2, 75, 82, 93, 33)
-        net = NeuralNet(2, 3, 2, activator = Activator.SIGMOID, random = Random.GAUSSIAN)
+        net = NeuralNet(2, 3, 2, activator = Activator.SIGMOID, random = Random.ONE)
         xx = x.deepClone()
     }
 

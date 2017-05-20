@@ -1,5 +1,6 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.snake
 
+import ca.allanwang.snnake.snakeDefaultSize
 import javafx.scene.shape.Rectangle
 import java.util.*
 
@@ -7,30 +8,55 @@ import java.util.*
  * Created by Allan Wang on 2017-05-13.
  */
 
-enum class Directions {
-    NONE {
+enum class Directions(val northShift: Int) {
+    NONE(0) {
         override fun apply(c: C): C = c
         override fun isOpposite(d: Directions) = false
+        override val left = lazy { NONE }
+        override val right = lazy { NONE }
+        override fun relativeAxis(up: Double, right: Double): Pair<Double, Double> = Pair(up, right)
     },
-    UP {
+    UP(0) {
         override fun apply(c: C): C = C(c.x, c.y - 1)
         override fun isOpposite(d: Directions) = d == DOWN
+        override val left = lazy { LEFT }
+        override val right = lazy { RIGHT }
+        override fun relativeAxis(up: Double, right: Double): Pair<Double, Double> = Pair(up, right)
     },
-    RIGHT {
+    RIGHT(3) {
         override fun apply(c: C): C = C(c.x + 1, c.y)
         override fun isOpposite(d: Directions) = d == LEFT
+        override val left = lazy { UP }
+        override val right = lazy { DOWN }
+        override fun relativeAxis(up: Double, right: Double): Pair<Double, Double> = Pair(right, -up)
     },
-    DOWN {
+    DOWN(2) {
         override fun apply(c: C): C = C(c.x, c.y + 1)
         override fun isOpposite(d: Directions) = d == UP
+        override val left = lazy { RIGHT }
+        override val right = lazy { LEFT }
+        override fun relativeAxis(up: Double, right: Double): Pair<Double, Double> = Pair(-up, -right)
     },
-    LEFT {
+    LEFT(1) {
         override fun apply(c: C): C = C(c.x - 1, c.y)
         override fun isOpposite(d: Directions) = d == RIGHT
+        override val left = lazy { DOWN }
+        override val right = lazy { UP }
+        override fun relativeAxis(up: Double, right: Double): Pair<Double, Double> = Pair(-right, up)
     };
 
     abstract fun apply(c: C): C
     abstract fun isOpposite(d: Directions): Boolean
+    fun relativeIndex(i: Int, size: Int): Int {
+        var index = (i + northShift) % size
+        while (index < 0) index += size
+        return index
+    }
+
+    abstract val left: Lazy<Directions>
+    abstract val right: Lazy<Directions>
+    abstract fun relativeAxis(up: Double, right: Double): Pair<Double, Double>
+    fun relativeAxis(up: Int, right: Int) = relativeAxis(up.toDouble(), right.toDouble())
 }
 
 //maximum of 9 values; snake id (if it exists) will by multiplied by 10 and added to the ordinal
@@ -104,7 +130,12 @@ data class C(val x: Int, val y: Int) {
             return MapData.INVALID.ordinal
         return map[y][x]
     }
+
 }
+
+infix fun C.distanceTo(c: C): Double = Math.hypot((x - c.x).toDouble(), (y - c.y).toDouble())
+
+infix fun C.closest(points: List<C>): C? = points.minBy { c -> this distanceTo c }
 
 class SnakeQueue(private var maxSize: Int = snakeDefaultSize) : LinkedList<C>() {
 

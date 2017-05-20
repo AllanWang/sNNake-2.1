@@ -1,5 +1,7 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
+import ca.allanwang.snnake.assertDoubleEquals
+import ca.allanwang.snnake.assertDoubleNotEquals
 import org.junit.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -78,8 +80,8 @@ class NeuralNetCoreTest {
     //Ensure that random() is a function that doesn't cache the variable
     @Test
     fun randomAbsOneTest() {
-        val a = Random.ABS_ONE.random()
-        val b = Random.ABS_ONE.random()
+        val a = Random.ONE.random()
+        val b = Random.ONE.random()
         assertDoubleNotEquals(a, b, "Random variables should be different")
         assertTrue(a <= 1)
         assertTrue(a >= -1)

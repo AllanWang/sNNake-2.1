@@ -1,5 +1,10 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.snake
 
+import ca.allanwang.snnake.gameHeight
+import ca.allanwang.snnake.gameWidth
+import ca.allanwang.snnake.neuralnet.Matrix
+import ca.allanwang.snnake.neuralnet.NNGenetics
+import ca.allanwang.snnake.neuralnet.NeuralNet
 import javafx.animation.Animation
 import javafx.animation.KeyFrame
 import javafx.animation.Timeline
@@ -27,9 +32,13 @@ interface SnakeGameContract {
 
     fun getMap(): Array<IntArray>
 
+    fun getApples(): List<C>
+
     fun getNode(): Node?
 
     fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int)
+
+    fun getNeuralOutput(input: Matrix): Matrix
 }
 
 enum class StepStage {
@@ -41,6 +50,9 @@ enum class StepStage {
 }
 
 class SnakeGame : Controller(), SnakeGameContract {
+    override fun getNeuralOutput(input: Matrix): Matrix = nng.getOutput(input)
+
+    override fun getApples(): List<C> = apples
 
     override fun getMap(): Array<IntArray> = gameMap
 
@@ -54,18 +66,18 @@ class SnakeGame : Controller(), SnakeGameContract {
                 applesToSpawn++
             }
             MapData.SNAKE_BODY.ordinal -> {
-                snakes[id.ordinal].terminate()
+                snakes[id.ordinal].terminate(stepsAlive)
                 val otherSnake = MapData.getSnake(prevHeadValue)
                 if (otherSnake != id)
                     snakes[otherSnake.ordinal].score(FlagScore.CAPTURED_SNAKE)
             }
             MapData.SNAKE_HEAD.ordinal -> {
-                snakes[id.ordinal].terminate()
+                snakes[id.ordinal].terminate(stepsAlive)
                 val otherSnake = MapData.getSnake(prevHeadValue)
-                snakes[otherSnake.ordinal].terminate()
+                snakes[otherSnake.ordinal].terminate(stepsAlive)
             }
             MapData.INVALID.ordinal -> {
-                snakes[id.ordinal].terminate()
+                snakes[id.ordinal].terminate(stepsAlive)
             }
             else -> {
                 println("Unknown status $prevHeadValue from snake ${id.ordinal}")
@@ -80,7 +92,10 @@ class SnakeGame : Controller(), SnakeGameContract {
     private var gameCont = false
     var snakes = mutableListOf<Snake>()
     var applesToSpawn = 1
+    var stepsAlive = 0L
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { MapData.EMPTY.ordinal }) })
+    val nng = NNGenetics("sNNake", NeuralNet(6, 6, 3))
+    private val apples = mutableListOf<C>()
 
     fun bind(snakeFrame: SnakeView) {
         println("Ready")
@@ -154,14 +169,25 @@ class SnakeGame : Controller(), SnakeGameContract {
         return (group.selectedToggle as RadioButton).text == HUMAN
     }
 
+    fun checkForProgress() {
+        if (!gameCont || pause) return
+        if (snakes.any { s -> !s.dead && s.human }) return
+        val sNNakes = snakes.filter { s -> !s.dead && !s.human }
+        if (sNNakes.isNotEmpty() && sNNakes.none { snake -> snake.hasScoreChanged() }) {
+            nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score }/snakes.size) - 10.0)
+            newGame()
+        } else snakes.forEach { s -> s.flushScore() }
+    }
+
 
     fun newGame() {
         gameCont = true
         pause = false
         updateTimer(true)
+        stepsAlive = 0L
         snakes.forEach {
             s ->
-            s.terminate()
+            s.terminate(stepsAlive)
         }
         snakes.clear()
         snakes.add(Snake(SnakeId._1, isHuman(snakeFrame.player1), this))
@@ -215,10 +241,10 @@ class SnakeGame : Controller(), SnakeGameContract {
     fun playTurn() {
         if (!gameCont) {
             timeline.stop()
-            println("Game Over")
-            snakeFrame.play.text = "Start"
+            gameEnded()
             return
         }
+        if (stepsAlive % 100L == 99L) checkForProgress()
         StepStage.values.forEach {
             stage ->
             snakes.forEach {
@@ -227,6 +253,7 @@ class SnakeGame : Controller(), SnakeGameContract {
             }
         }
         spawnApples()
+        stepsAlive++
         draw(gameMap)
         gameCont = false
         snakes.forEach {
@@ -235,15 +262,25 @@ class SnakeGame : Controller(), SnakeGameContract {
         }
     }
 
+    fun gameEnded() {
+//        println("Game Over")
+//        snakeFrame.play.text = "Start"
+        nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score }/snakes.size))
+        newGame()
+    }
+
     fun draw(map: Array<IntArray>) {
+        apples.clear()
         snakeFrame.grid.children.filter { it is Rectangle }.forEach {
             rect ->
             val row = GridPane.getRowIndex(rect)
             val col = GridPane.getColumnIndex(rect)
             val data = MapData.get(map[row][col])
-            if (data == MapData.SNAKE_HEAD || data == MapData.SNAKE_BODY)
+            if (data == MapData.SNAKE_HEAD || data == MapData.SNAKE_BODY) {
                 if (snakes[MapData.getSnake(map[row][col]).ordinal].dead)
                     map[row][col] = MapData.EMPTY.ordinal
+            } else if (data == MapData.APPLE)
+                apples.add(C(row, col))
             MapData.color(rect as Rectangle, map[row][col])
         }
     }

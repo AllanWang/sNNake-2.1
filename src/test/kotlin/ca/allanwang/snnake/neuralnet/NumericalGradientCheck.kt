@@ -1,4 +1,4 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 import org.junit.Before
 import org.junit.Test
@@ -23,7 +23,7 @@ class NumericalGradientCheck {
         y = Matrix(3, 1, 75, 82, 93)
         x.normalize(Normalizer.COL_MAX)
         y / 100.0 // Max score is 100
-        net = NeuralNet(2, 3, 1, activator = Activator.SIGMOID, random = Random.GAUSSIAN)
+        net = NeuralNet(2, 3, 1, activator = Activator.SIGMOID, random = Random.ONE)
         net.setWeights(0.41711098, 1.20390897, 1.20588656, -0.7321096, -1.98205185, 0.76438889, -0.55641753, -1.76878453, 0.89061722)
     }
 

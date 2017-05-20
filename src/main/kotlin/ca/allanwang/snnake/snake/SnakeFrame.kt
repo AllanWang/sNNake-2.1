@@ -1,5 +1,8 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.snake
 
+import ca.allanwang.snnake.blockSize
+import ca.allanwang.snnake.gameHeight
+import ca.allanwang.snnake.gameWidth
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.control.Button
@@ -14,15 +17,9 @@ import tornadofx.*
 /**
  * Created by Allan Wang on 2017-05-13.
  */
-class SnakeApp : App(SnakeView::class, SnakeStyle::class) {
-    init {
-        reloadStylesheetsOnFocus()
-    }
-}
-
 const val fpsDefault: Double = 20.0
 const val fpsMin: Double = 0.0
-const val fpsMax: Double = 60.0
+const val fpsMax: Double = 120.0
 const val fpsInc: Double = 2.0
 
 const val HUMAN = "Human"
@@ -48,10 +45,10 @@ class SnakeView : View("sNNake 2.1") {
                     hbox {
                         vbox {
                             label("Player 1")
-                            radiobutton(HUMAN, player1) {
+                            radiobutton(HUMAN, player1)
+                            radiobutton(NEURAL_NET, player1) {
                                 isSelected = true
                             }
-                            radiobutton(NEURAL_NET, player1)
                         }
                         vbox {
                             label("Player 2")
@@ -118,8 +115,8 @@ class SnakeStyle : Stylesheet() {
         val padding by cssclass()
         val paddingHorizontal by cssclass()
         val paddingBottom by cssclass()
-        val apple = Color.RED
-        val background = Color.BLACK
+        val apple: Color = Color.RED
+        val background: Color = Color.BLACK
     }
 
     init {

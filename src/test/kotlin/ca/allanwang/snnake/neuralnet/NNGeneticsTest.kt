@@ -1,4 +1,4 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 import org.junit.Before
 import org.junit.Test
@@ -17,7 +17,7 @@ class NNGeneticsTest {
 
     @Before
     fun init() {
-        nng = NNGenetics("NNGT", NeuralNet(1, 2, 2).setWeights(1, 2, 3, 4, 5, 6), 20, 0.2, 2, intArrayOf(2, 4))
+        nng = NNGenetics("NNGT", NeuralNet(1, 2, 2).setWeights(1, 2, 3, 4, 5, 6), crossPoints = intArrayOf(2, 4))
         first = listOf(1.0, 3.0, 5.0, 7.0, 9.0, 11.0)
         second = listOf(2.0, 4.0, 6.0, 8.0, 10.0, 12.0)
     }
@@ -27,6 +27,11 @@ class NNGeneticsTest {
         assertTrue(nng.bestFile.exists(), "Best file should be created")
         assertTrue(nng.populationFile.exists(), "Population file should be created")
     }
+
+//    @Test
+//    fun resourceFiles() {
+//        println(nng.bestFile.absolutePath)
+//    }
 
     @Test
     fun rw() {
@@ -72,10 +77,10 @@ class NNGeneticsTest {
 
     fun fillPopulation() {
         nng.populationMap.apply {
-            put(List<Double>(6, { 2.0 }), 2)
-            put(second.toList(), 3)
-            put(first.toList(), 3)
-            put(first.toList(), 4)
+            put(List<Double>(6, { 2.0 }), 2.0)
+            put(second.toList(), 3.0)
+            put(first.toList(), 3.0)
+            put(first.toList(), 4.0)
             assertEquals(first.toList(), maxBy { it.value }!!.key, "MaxEntry should be list of 3s")
         }
     }
@@ -89,7 +94,7 @@ class NNGeneticsTest {
         assertEquals(best, nng.read(nng.bestFile).first())
 //        assertEquals(2, nng.generation, "Generation should be incremented")
         assertEquals(0, nng.populationMap.size, "Population map should be cleared after updateGeneration")
-        assertTrue(nng.generationSize <= nng.read(nng.populationFile).size, "population file should now hold at least ${nng.generationSize} items")
+        assertTrue(nng.populationSize <= nng.read(nng.populationFile).size, "population file should now hold at least ${nng.populationSize} items")
     }
 
     @Test

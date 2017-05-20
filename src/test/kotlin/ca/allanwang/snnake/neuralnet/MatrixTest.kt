@@ -1,4 +1,4 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 import org.junit.Before
 import org.junit.Test

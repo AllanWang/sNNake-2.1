@@ -1,9 +1,9 @@
-package ca.allanwang.snnake
+package ca.allanwang.snnake.neuralnet
 
 /**
  * Created by Allan Wang on 2017-05-15.
  */
-class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIGMOID, var random: Random = Random.GAUSSIAN) {
+class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIGMOID, var random: Random = Random.ONE) {
 
     val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> randomWeight() } })
     fun layerSize(i: Int) = matrices[i].rows
@@ -24,6 +24,11 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
         val iter = values.iterator()
         matrices.forEach { matrix -> matrix.forEach { _ -> if (iter.hasNext()) iter.next() else throw NeuralNetException("Could not set weights for all matrices; size mismatch") } }
         if (iter.hasNext()) throw NeuralNetException("Too many weights given in setWeights")
+        return this
+    }
+
+    fun setRandomWeights(): NeuralNet {
+        matrices.forEach { matrix -> matrix.forEach { _ -> randomWeight() } }
         return this
     }
 
