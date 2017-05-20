@@ -79,8 +79,8 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
         keyEventHandler = null
     }
 
-    fun score(points: FlagScore) {
-        score += points.points
+    fun score(points: FlagScore, stepThreshold: Double) {
+        score += points.points * (1.0 - 0.2 * stepThreshold)
         positions.incrementMaxSize(points.sizeIncrease)
     }
 
@@ -156,7 +156,10 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
 
     internal fun getNextDirection(): Directions {
         if (prevDirection == Directions.NONE) prevDirection = pendingDirection
-        val output = gameContract.getNeuralOutput(getInputMatrix()).toList()
+        val input = getInputMatrix()
+//        println("input $input")
+        val output = gameContract.getNeuralOutput(input).toList()
+//        println("output $output")
         return when (Math.max(Math.max(output[0], output[1]), output[2])) {
             output[0] -> prevDirection.left.value
             output[2] -> prevDirection.right.value
@@ -164,9 +167,7 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
         }
     }
 
-    fun terminate(stepsAlive: Long) {
-//        println("Snake ${id.ordinal} died")
-        score += (stepsAlive.toDouble() / 200)
+    fun terminate() {
         dead = true
         positions.clear()
         removeKeyEventHandler()

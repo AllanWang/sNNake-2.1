@@ -18,8 +18,15 @@ class NNGenetics(key: String,
                  val mutationsPerList: Int = 2,
                  val mutationIncrement: Double = 1e-4,
                  val iterations: Int = 3,
-                 crossPoints: IntArray = intArrayOf(2)) {
+                 crossPoints: IntArray = intArrayOf(2),
+                 generationCallback: ((Int, List<Double>, Double) -> Unit)? = null
+) {
 
+    var generationCallback: ((Int, List<Double>, Double) -> Unit)? = generationCallback
+        set(value) {
+            field = value
+            value?.invoke(generation, emptyList(), 0.0)
+        }
     var generation = 0
         private set
     private val iterationList = mutableListOf<Double>()
@@ -38,7 +45,8 @@ class NNGenetics(key: String,
         if (crossPointList.first() < 0) throw NNGeneticsException("Crosspoints are indices and cannot be less than 0; cross ${crossPointList.first()} found")
         if (crossPointList.first() != 0) crossPointList.add(0, 0)
         this.crossPoints = crossPointList.toIntArray()
-        if (populationSize < 0) throw NNGeneticsException("populationSize should be greater than 0; currently $populationSize")
+        if (populationSize < 2) throw NNGeneticsException("populationSize should be greater than 2; currently $populationSize")
+        if (populationRetention < 0) throw NNGeneticsException("populationRetention should be greater than 0; currently $populationRetention")
         prepareGeneration()
     }
 
@@ -106,7 +114,7 @@ class NNGenetics(key: String,
         val maxEntry = populationMap.maxBy { it.value }
         var best: MutableList<List<Double>> = mutableListOf(*populationMap.keys.toTypedArray())
         best.sortBy { list -> populationMap[list] }     // sort by fitness
-        best = best.subList((best.size.toDouble() * (1 - populationRetention)).toInt(), best.size)   // get the better sublist
+        best = best.subList(Math.min((best.size.toDouble() * (1.0 - populationRetention)).toInt(), best.size - 2), best.size)   // get the better sublist
         populationMap.clear()
         clearFile(populationFile)
         //generate new population data
@@ -129,12 +137,14 @@ class NNGenetics(key: String,
         }
         writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)} # ${maxEntry.value}") }
         prepareGeneration()
+        generationCallback?.invoke(generation, maxEntry!!.key, maxEntry.value)
     }
 
     internal fun prepareGeneration() {
         if (generation == 0) {
             val bestData = read(bestFile)
             if (bestData.isNotEmpty() && bestData.last().second != -1) generation = bestData.last().second
+            generationCallback?.invoke(generation, bestData.last().first, bestData.last().third)
         }
         generation++
         dataIter = read(populationFile).map { pair -> pair.first }.iterator()
@@ -164,8 +174,8 @@ class NNGenetics(key: String,
 
     internal fun write(file: File, vararg lists: List<Double>) = writer(file).use { w -> lists.forEach { list -> w.println(listToString(list)) } }
     internal fun writer(file: File, append: Boolean = true) = PrintWriter(BufferedWriter(FileWriter(file, append)))
-    internal fun read(file: File): List<Pair<List<Double>, Int>> {
-        val list = mutableListOf<Pair<List<Double>, Int>>()
+    internal fun read(file: File): List<Triple<List<Double>, Int, Double>> {
+        val list = mutableListOf<Triple<List<Double>, Int, Double>>()
         file.readLines().forEach {
             s ->
             if (!s.isBlank()) {
@@ -176,8 +186,13 @@ class NNGenetics(key: String,
                     generation = split[0].trim().toInt()
                     line = split[1]
                 }
-                if (line.contains('#')) line = line.split('#')[0]
-                list.add(Pair(stringToList(line), generation))
+                var fitness = 0.0
+                if (line.contains('#')) {
+                    val split = line.split('#')
+                    line = split[0]
+                    fitness = split[1].trim().toDouble()
+                }
+                list.add(Triple(stringToList(line), generation, fitness))
             }
         }
         return list

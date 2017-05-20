@@ -90,7 +90,7 @@ class NNGeneticsTest {
         nng.clearFile(nng.bestFile)
         fillPopulation()
         nng.updateGeneration()
-        val best = Pair(first.toList(), 1)
+        val best = Triple(first.toList(), 1, 4.0)
         assertEquals(best, nng.read(nng.bestFile).first())
 //        assertEquals(2, nng.generation, "Generation should be incremented")
         assertEquals(0, nng.populationMap.size, "Population map should be cleared after updateGeneration")

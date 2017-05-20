@@ -36,6 +36,8 @@ class SnakeView : View("sNNake 2.1") {
     lateinit var grid: GridPane
     lateinit var play: Button
     private lateinit var fps: Label
+    internal lateinit var generation: Label
+    internal  lateinit var fitness: Label
 
     init {
         with(root) {
@@ -89,6 +91,12 @@ class SnakeView : View("sNNake 2.1") {
                             text = controller.playButton(text)
                         }
                     }
+                    generation = label("Generation -") {
+                        addClass(SnakeStyle.paddingVertical)
+                    }
+                    fitness = label("Max Fitness: -")  {
+                        addClass(SnakeStyle.paddingBottom)
+                    }
                 }
                 center = vbox {
                     grid = gridpane {
@@ -114,6 +122,7 @@ class SnakeStyle : Stylesheet() {
     companion object {
         val padding by cssclass()
         val paddingHorizontal by cssclass()
+        val paddingVertical by cssclass()
         val paddingBottom by cssclass()
         val apple: Color = Color.RED
         val background: Color = Color.BLACK
@@ -125,6 +134,9 @@ class SnakeStyle : Stylesheet() {
         }
         paddingHorizontal {
             padding = box(0.px, 20.px)
+        }
+        paddingVertical {
+            padding = box(20.px, 0.px)
         }
         paddingBottom {
             padding = box(0.px, 0.px, 20.px, 0.px)

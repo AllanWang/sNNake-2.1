@@ -107,8 +107,8 @@ enum class MapData {
     }
 }
 
-enum class FlagScore(val points: Int, val sizeIncrease: Int) {
-    APPLE(1, 1), CAPTURED_SNAKE(10, 5)
+enum class FlagScore(val points: Double, val sizeIncrease: Int) {
+    APPLE(1.0, 1), CAPTURED_SNAKE(10.0, 5)
 }
 
 enum class FlagTerminate {

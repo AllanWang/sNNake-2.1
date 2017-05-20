@@ -62,27 +62,32 @@ class SnakeGame : Controller(), SnakeGameContract {
         when (prevHeadValue % 10) {
             MapData.EMPTY.ordinal -> return
             MapData.APPLE.ordinal -> {
-                snakes[id.ordinal].score(FlagScore.APPLE)
+                score(id.ordinal, FlagScore.APPLE)
                 applesToSpawn++
             }
             MapData.SNAKE_BODY.ordinal -> {
-                snakes[id.ordinal].terminate(stepsAlive)
+                snakes[id.ordinal].terminate()
                 val otherSnake = MapData.getSnake(prevHeadValue)
                 if (otherSnake != id)
-                    snakes[otherSnake.ordinal].score(FlagScore.CAPTURED_SNAKE)
+                    score(otherSnake.ordinal, FlagScore.CAPTURED_SNAKE)
             }
             MapData.SNAKE_HEAD.ordinal -> {
-                snakes[id.ordinal].terminate(stepsAlive)
+                snakes[id.ordinal].terminate()
                 val otherSnake = MapData.getSnake(prevHeadValue)
-                snakes[otherSnake.ordinal].terminate(stepsAlive)
+                snakes[otherSnake.ordinal].terminate()
             }
             MapData.INVALID.ordinal -> {
-                snakes[id.ordinal].terminate(stepsAlive)
+                snakes[id.ordinal].terminate()
             }
             else -> {
                 println("Unknown status $prevHeadValue from snake ${id.ordinal}")
             }
         }
+    }
+
+    fun score(id: Int, score: FlagScore) {
+        snakes[id].score(score, stepThreshold)
+        stepsAlive = 0L
     }
 
     lateinit var snakeFrame: SnakeView
@@ -91,8 +96,11 @@ class SnakeGame : Controller(), SnakeGameContract {
     private var pause = true
     private var gameCont = false
     var snakes = mutableListOf<Snake>()
-    var applesToSpawn = 1
-    var stepsAlive = 0L
+    private var applesToSpawn = 1
+    private var stepsAlive = 0L
+    private val stepsCap = 200L
+    val stepThreshold: Double
+        get() = stepsAlive.toDouble() / stepsCap.toDouble()
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { MapData.EMPTY.ordinal }) })
     val nng = NNGenetics("sNNake", NeuralNet(6, 6, 3))
     private val apples = mutableListOf<C>()
@@ -122,6 +130,13 @@ class SnakeGame : Controller(), SnakeGameContract {
             }
             if (consume) event.consume()
         })
+        nng.generationCallback = generationUpdate
+    }
+
+    val generationUpdate: (Int, List<Double>, Double) -> Unit = {
+        generation, _, fitness ->
+        snakeFrame.generation.text = "Generation $generation"
+        snakeFrame.fitness.text = String.format("Max Fitness: %.8f", fitness)
     }
 
     fun playButton(text: String): String {
@@ -174,7 +189,7 @@ class SnakeGame : Controller(), SnakeGameContract {
         if (snakes.any { s -> !s.dead && s.human }) return
         val sNNakes = snakes.filter { s -> !s.dead && !s.human }
         if (sNNakes.isNotEmpty() && sNNakes.none { snake -> snake.hasScoreChanged() }) {
-            nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score }/snakes.size) - 10.0)
+            nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score } / snakes.size))
             newGame()
         } else snakes.forEach { s -> s.flushScore() }
     }
@@ -187,7 +202,7 @@ class SnakeGame : Controller(), SnakeGameContract {
         stepsAlive = 0L
         snakes.forEach {
             s ->
-            s.terminate(stepsAlive)
+            s.terminate()
         }
         snakes.clear()
         snakes.add(Snake(SnakeId._1, isHuman(snakeFrame.player1), this))
@@ -244,7 +259,7 @@ class SnakeGame : Controller(), SnakeGameContract {
             gameEnded()
             return
         }
-        if (stepsAlive % 100L == 99L) checkForProgress()
+        if (stepsAlive > stepsCap) checkForProgress()
         StepStage.values.forEach {
             stage ->
             snakes.forEach {
@@ -265,7 +280,7 @@ class SnakeGame : Controller(), SnakeGameContract {
     fun gameEnded() {
 //        println("Game Over")
 //        snakeFrame.play.text = "Start"
-        nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score }/snakes.size))
+        nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score } / snakes.size))
         newGame()
     }
 
@@ -284,5 +299,4 @@ class SnakeGame : Controller(), SnakeGameContract {
             MapData.color(rect as Rectangle, map[row][col])
         }
     }
-
 }
