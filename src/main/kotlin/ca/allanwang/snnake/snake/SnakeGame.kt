@@ -23,6 +23,8 @@ import tornadofx.*
 
 /**
  * Created by Allan Wang on 2017-05-13.
+ *
+ * Holds the game logic and handles the neural net
  */
 
 /**
@@ -58,6 +60,11 @@ class SnakeGame : Controller(), SnakeGameContract {
 
     override fun getNode(): Node = snakeFrame.grid
 
+    /**
+     * At the last stage of step, allows snakes to send their previous head status so their scores may be updated
+     * [id] snake sender
+     * [prevHeadValue] prev map value at the location of their current head
+     */
     override fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int) {
         when (prevHeadValue % 10) {
             MapData.EMPTY.ordinal -> return
@@ -105,6 +112,9 @@ class SnakeGame : Controller(), SnakeGameContract {
     val nng = NNGenetics("sNNake", NeuralNet(6, 6, 3))
     private val apples = mutableListOf<C>()
 
+    /**
+     * Called from [SnakeView] when the UI is ready
+     */
     fun bind(snakeFrame: SnakeView) {
         println("Ready")
         this.snakeFrame = snakeFrame
@@ -133,12 +143,18 @@ class SnakeGame : Controller(), SnakeGameContract {
         nng.generationCallback = generationUpdate
     }
 
+    /**
+     * Callback for [NNGenetics] to update the UI when the generation increments
+     */
     val generationUpdate: (Int, List<Double>, Double) -> Unit = {
         generation, _, fitness ->
         snakeFrame.generation.text = "Generation $generation"
         snakeFrame.fitness.text = String.format("Max Fitness: %.8f", fitness)
     }
 
+    /**
+     * Binds playButton function and updates its text
+     */
     fun playButton(text: String): String {
         when (text) {
             "Start" -> {
@@ -167,6 +183,13 @@ class SnakeGame : Controller(), SnakeGameContract {
         updateTimer(true)
     }
 
+    /**
+     * Updates the timer based on the following changes:
+     * Play/pause
+     * Fps change
+     * Game over
+     * [recreate] forces a new timeline creation, usually due to a new fps
+     */
     fun updateTimer(recreate: Boolean = false) {
         if (!pause) snakeFrame.grid.requestFocus()
         if (recreate) {
@@ -180,10 +203,17 @@ class SnakeGame : Controller(), SnakeGameContract {
         else if (!pause && timeline.status != Animation.Status.RUNNING) timeline.playFromStart()
     }
 
+    /**
+     * Checks if player is a human
+     */
     fun isHuman(group: ToggleGroup): Boolean {
         return (group.selectedToggle as RadioButton).text == HUMAN
     }
 
+    /**
+     * After [stepsCap], makes sure that if there are only neural nets, they are making progress
+     * Otherwise, restart the game to avoid infinite loops
+     */
     fun checkForProgress() {
         if (!gameCont || pause) return
         if (snakes.any { s -> !s.dead && s.human }) return
@@ -194,7 +224,9 @@ class SnakeGame : Controller(), SnakeGameContract {
         } else snakes.forEach { s -> s.flushScore() }
     }
 
-
+    /**
+     * Creates a new game with new snakes
+     */
     fun newGame() {
         gameCont = true
         pause = false
@@ -218,6 +250,9 @@ class SnakeGame : Controller(), SnakeGameContract {
         spawnApples()
     }
 
+    /**
+     * While we still need more apples, make new apples in empty map spaces
+     */
     private fun spawnApples() {
         while (applesToSpawn > 0) {
             val (x, y) = spawnApple()
@@ -253,6 +288,9 @@ class SnakeGame : Controller(), SnakeGameContract {
         return C(x, y)
     }
 
+    /**
+     * Triggers every snake to make their next move
+     */
     fun playTurn() {
         if (!gameCont) {
             timeline.stop()
@@ -277,6 +315,9 @@ class SnakeGame : Controller(), SnakeGameContract {
         }
     }
 
+    /**
+     * Marks the end of the game; all snakes are dead
+     */
     fun gameEnded() {
 //        println("Game Over")
 //        snakeFrame.play.text = "Start"
@@ -284,6 +325,9 @@ class SnakeGame : Controller(), SnakeGameContract {
         newGame()
     }
 
+    /**
+     * Redraws the entire grid using [map] values
+     */
     fun draw(map: Array<IntArray>) {
         apples.clear()
         snakeFrame.grid.children.filter { it is Rectangle }.forEach {

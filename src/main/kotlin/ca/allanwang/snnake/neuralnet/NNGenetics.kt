@@ -11,15 +11,15 @@ import java.io.PrintWriter
 class NNGeneticsException(message: String) : RuntimeException(message)
 
 class NNGenetics(key: String,
-                 val net: NeuralNet,
-                 val populationSize: Int = 100,
-                 val populationRetention: Double = 0.2,
-                 val mutationRate: Double = 0.2,
-                 val mutationsPerList: Int = 2,
-                 val mutationIncrement: Double = 1e-4,
-                 val iterations: Int = 3,
-                 crossPoints: IntArray = intArrayOf(2),
-                 generationCallback: ((Int, List<Double>, Double) -> Unit)? = null
+                 val net: NeuralNet, // The Neural Net
+                 val populationSize: Int = 100, // Max population size before a new generation
+                 val populationRetention: Double = 0.2, // Percent of population to keep for next generation
+                 val mutationRate: Double = 0.2, // Percent of population to mutate
+                 val mutationsPerList: Int = 2, // Number of items to mutate per given weight set
+                 val mutationIncrement: Double = 1e-4, // For increment mutations, max value to increment/decrement
+                 val iterations: Int = 3, // Number of times to test a given weight before moving onto the next one
+                 crossPoints: IntArray = intArrayOf(2), // Joints to cross two parents when creating their children
+                 generationCallback: ((Int, List<Double>, Double) -> Unit)? = null  // Callback function to receive generation update reports
 ) {
 
     var generationCallback: ((Int, List<Double>, Double) -> Unit)? = generationCallback
@@ -174,6 +174,10 @@ class NNGenetics(key: String,
 
     internal fun write(file: File, vararg lists: List<Double>) = writer(file).use { w -> lists.forEach { list -> w.println(listToString(list)) } }
     internal fun writer(file: File, append: Boolean = true) = PrintWriter(BufferedWriter(FileWriter(file, append)))
+    /**
+     * Reader helper, mainly to read best.txt
+     * Extracts each line into a Triple containing the weights, the generation, and the fitness value
+     */
     internal fun read(file: File): List<Triple<List<Double>, Int, Double>> {
         val list = mutableListOf<Triple<List<Double>, Int, Double>>()
         file.readLines().forEach {

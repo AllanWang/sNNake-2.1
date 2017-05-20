@@ -16,6 +16,8 @@ import tornadofx.*
 
 /**
  * Created by Allan Wang on 2017-05-13.
+ *
+ * The UI component of the game; other constants may be found under SnakeConfig.kt
  */
 const val fpsDefault: Double = 20.0
 const val fpsMin: Double = 0.0

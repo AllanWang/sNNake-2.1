@@ -154,12 +154,13 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
         return Matrix(1, 6, input)
     }
 
+    /**
+     * Computes next direction with respect to [prevDirection] using the Neural Net
+     */
     internal fun getNextDirection(): Directions {
         if (prevDirection == Directions.NONE) prevDirection = pendingDirection
         val input = getInputMatrix()
-//        println("input $input")
         val output = gameContract.getNeuralOutput(input).toList()
-//        println("output $output")
         return when (Math.max(Math.max(output[0], output[1]), output[2])) {
             output[0] -> prevDirection.left.value
             output[2] -> prevDirection.right.value
@@ -167,6 +168,9 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
         }
     }
 
+    /**
+     * Mark dead and clear what we don't need
+     */
     fun terminate() {
         dead = true
         positions.clear()

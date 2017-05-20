@@ -20,7 +20,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
         get() = rows * cols
 
     constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols, values.toList())
-    constructor(rows: Int, cols: Int,  values: List<Double>) : this(rows, cols) {
+    constructor(rows: Int, cols: Int, values: List<Double>) : this(rows, cols) {
         if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch: $rows by $cols with ${values.size} values")
         forEach { y, x, _ -> values[y * cols + x] }
     }
@@ -41,11 +41,17 @@ class Matrix(var matrix: Array<DoubleArray>) {
         }
     }
 
+    /**
+     * Replace [matrix] content without creating a new Matrix
+     */
     fun set(m: Matrix): Matrix {
         this.matrix = m.deepClone().matrix
         return this
     }
 
+    /**
+     * Sets all values of [matrix] to [value]
+     */
     fun fill(value: Double): Matrix {
         return forEach { _ -> value }
     }
@@ -53,12 +59,18 @@ class Matrix(var matrix: Array<DoubleArray>) {
     operator fun get(row: Int): DoubleArray = matrix[row]
     operator fun get(row: Int, col: Int): Double = matrix[row][col]
 
+    /**
+     * Concatenates matrix into a single list, row by row
+     */
     fun toList(): List<Double> {
         val list = mutableListOf<Double>()
         matrix.forEach { row -> list.addAll(row.toList()) }
         return list
     }
 
+    /**
+     * Flattens [matrix] so that it only has one row, where the value at each index is the sum of the column at that given index
+     */
     fun sumRows(): Matrix {
         matrix = Array(1, { DoubleArray(cols, { i -> col(i).sum() }) })
         return this

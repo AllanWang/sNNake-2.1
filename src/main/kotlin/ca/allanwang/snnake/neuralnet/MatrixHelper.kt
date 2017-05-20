@@ -2,6 +2,8 @@ package ca.allanwang.snnake.neuralnet
 
 /**
  * Created by Allan Wang on 2017-05-18.
+ *
+ * Misc validators for [Matrix]
  */
 class MatrixException(message: String) : RuntimeException(message)
 
@@ -21,9 +23,7 @@ enum class Op {
 
     abstract fun validate(m: Matrix, n: Matrix): Boolean
 
-    fun validateOrThrow(m: Matrix, n: Matrix) {
-        if (!validate(m, n)) throw MatrixException(errorMessage(m, n))
-    }
+    fun validateOrThrow(m: Matrix, n: Matrix) = if (!validate(m, n)) throw MatrixException(errorMessage(m, n)) else Unit
 
     fun errorMessage(m: Matrix, n: Matrix) = "${toString()}: size mismatch, (${m.rows} x ${m.cols}) & (${n.rows} x ${n.cols})"
 }

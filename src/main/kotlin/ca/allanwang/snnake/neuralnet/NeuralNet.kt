@@ -2,11 +2,12 @@ package ca.allanwang.snnake.neuralnet
 
 /**
  * Created by Allan Wang on 2017-05-15.
+ *
+ * Holds neurons and their respective synapses as matrices, and offers random generations and error processing
  */
 class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIGMOID, var random: Random = Random.GAUSSIAN) {
 
     val matrices = Array<Matrix>(layerSizes.size - 1, { i -> Matrix(layerSizes[i], layerSizes[i + 1]).forEach { _ -> randomWeight() } })
-    fun layerSize(i: Int) = matrices[i].rows
     val inputSize: Int
         get() = matrices.first().rows
     val outputSize: Int
@@ -73,7 +74,8 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
     }
 
     /**
-     * Duplicate of [forward], but only outputs the last activity, or the calculated output
+     * Duplicate of [forward], but only outputs the last activity (the calculated output)
+     * Reuses the matrices to save memory
      */
     fun output(input: Matrix): Matrix {
         val data = input.clone()
@@ -136,6 +138,9 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
     override fun equals(other: Any?): Boolean = (other is NeuralNet &&
             inputSize == other.inputSize && outputSize == other.outputSize && matrices contentDeepEquals other.matrices)
 
+    /**
+     * Compares another [NeuralNet], but with a [maxDiff] threshold allowance between every matrix pair
+     */
     fun equals(other: Any?, maxDiff: Double): Boolean = (other is NeuralNet &&
             inputSize == other.inputSize && outputSize == other.outputSize && matrices.size != other.matrices.size &&
             (0..matrices.size - 1).all { matrices[it].equals(other.matrices[it], maxDiff) })

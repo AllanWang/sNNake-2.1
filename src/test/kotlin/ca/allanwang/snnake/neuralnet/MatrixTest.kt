@@ -39,7 +39,7 @@ class MatrixTest {
             Matrix(2, 3, 1.0, 2.0, 3.0, 4.0, 5.0)
             fail("Did not catch bad matrix creation")
         } catch (e: MatrixException) {
-            assertEquals("Matrix row col creation mismatch", e.message, "Should throw row col mismatch exception")
+            assertEquals("Matrix row col creation mismatch: 2 by 3 with 5 values", e.message, "Should throw row col mismatch exception")
         }
     }
 

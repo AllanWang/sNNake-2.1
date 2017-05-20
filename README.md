@@ -1,5 +1,7 @@
 # sNNake 2.1
 
+[![Build Status](https://travis-ci.org/AllanWang/sNNake-2.1.svg?branch=master)](https://travis-ci.org/AllanWang/sNNake-2.1)
+
 A multiplayer snake game with Neural Networks.
 
 The following project consists of two main portions:
@@ -42,7 +44,7 @@ Combined, these two portions work to teach a NN how to play the game, without an
     * Which helped me create [sNNake 2.0](https://github.com/AllanWang/sNNake-2.0)
 * [@GregSkl](https://github.com/GregSkl) for his [SnakeNN implementation](https://github.com/GregSkl/SnakeNN)
     * Which acquainted me to Genetic Neural Networks
-* [Welch Labs](https://www.youtube.com/user/Taylorns34) for his [Neural Network Demystified Series](https://www.youtube.com/watch?v=bxe2T-V8XRs&list=PLiaHhY2iBX9hdHaRr6b7XevZtgZRa1PoU)
-    * Whichh greatly simplified the concepts of Neural Networks
+* [Welch Labs](https://www.youtube.com/user/Taylorns34) for his [Neural Networks Demystified Series](https://www.youtube.com/watch?v=bxe2T-V8XRs&list=PLiaHhY2iBX9hdHaRr6b7XevZtgZRa1PoU)
+    * Which greatly simplified the concepts of Neural Networks
 * [@edvin](https://github.com/edvin) for [TornadoFx](https://github.com/edvin/tornadofx)
     * Which greatly simplified the UI creation
