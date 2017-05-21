@@ -27,24 +27,46 @@ class SnakeVisionTest {
 
     fun verifyInputMatrix(vision: SnakeVision, head: C, prevDirection: Directions, key: String, result: Matrix) {
         val inputMatrix = vision.getInputMatrix(map, head, prevDirection, apples, 5)
-        assertEquals(result, inputMatrix, "Input Matrix ${prevDirection}_$key failed")
+        assertEquals(result, inputMatrix, "Input Matrix V${vision.name}_${prevDirection}_$key failed")
     }
 
     @Test
-    fun inputMatrixZeroUp() {
+    fun inputMatrix1ZeroUp() {
         val result = Matrix(1, 6, 0.0, 0.0, 5.0 / 6.0, 2.0 / 6.0, 0.0, 5.0 / 30.0)
         verifyInputMatrix(SnakeVision._1, C(0, 0), Directions.UP, "zero", result)
     }
 
     @Test
-    fun inputMatrixZeroLeft() {
+    fun inputMatrix1ZeroLeft() {
         val result = Matrix(1, 6, 1.0 / 5.0, 0.0, 0.0, 0.0, -2.0 / 6.0, 5.0 / 30.0)
         verifyInputMatrix(SnakeVision._1, C(0, 0), Directions.LEFT, "zero", result)
     }
 
     @Test
-    fun inputMatrixCenterRight() {
+    fun inputMatrix1CenterRight() {
         val result = Matrix(1, 6, 0.0, 3.0 / 6.0, 1.0 / 5.0, -2.0 / 5.0, 0.0, 5.0 / 30.0)
         verifyInputMatrix(SnakeVision._1, C(2, 2), Directions.RIGHT, "2", result)
+    }
+
+    @Test
+    fun inputMatrix2ZeroUp() {
+        val head = C(0, 0)
+        val apple = (head closest apples)!!
+        val result = Matrix(3, 5,
+                -1.0,-1.0, -1.0, -1.0, head.delta(apple, -1, 0),
+                -1.0,-1.0, -1.0, -1.0, head.delta(apple, 0, 1),
+                0.0,-1.0, 1.0, -1.0, head.delta(apple, 1, 0))
+        verifyInputMatrix(SnakeVision._2, head, Directions.UP, "zero", result)
+    }
+
+    @Test
+    fun inputMatrix2CenterRight() {
+        val head = C(2, 2)
+        val apple = (head closest apples)!!
+        val result = Matrix(3, 5,
+                -1.0,-1.0, 1.0, 0.0, head.delta(apple, 0, 1),
+                0.0,0.0, 0.0, 0.0, head.delta(apple, 1, 0),
+                0.0,0.0, -1.0, 0.0, head.delta(apple, 0, -1))
+        verifyInputMatrix(SnakeVision._2, head, Directions.RIGHT, "2", result)
     }
 }

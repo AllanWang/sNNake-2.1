@@ -59,28 +59,28 @@ enum class Directions(val northShift: Int) {
 }
 
 //maximum of 9 values; snake id (if it exists) will by multiplied by 10 and added to the ordinal
-enum class MapData {
-    EMPTY {
+enum class MapData(val rating: Double) {
+    EMPTY(0.0) {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = SnakeStyle.background
         }
     },
-    INVALID {
+    INVALID(-1.0) {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = SnakeStyle.background
         }
     },
-    APPLE {
+    APPLE(1.0) {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = SnakeStyle.apple
         }
     },
-    SNAKE_BODY {
+    SNAKE_BODY(-1.0) {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = id.color.darker()
         }
     },
-    SNAKE_HEAD {
+    SNAKE_HEAD(-1.0) {
         override fun color(rect: Rectangle, id: SnakeId) {
             rect.fill = id.color
         }
@@ -127,6 +127,19 @@ data class C(val x: Int, val y: Int) {
         if (x < 0 || y < 0 || y >= map.size || x >= map[0].size)
             return MapData.INVALID.ordinal
         return map[y][x]
+    }
+
+    fun getRating(map: Array<IntArray>): Double = MapData.get(get(map)).rating
+
+    fun shift(right: Int, up: Int): C = C(x + right, y - up)
+
+    /**
+     * Computes ((distance to C) - (distance to C after shift))/(distance to C)
+     */
+    fun delta(reference: C, shiftX: Int, shiftY: Int): Double {
+        val orig = distanceTo(reference)
+        val shifted = shift(shiftX, shiftY) distanceTo reference
+        return (orig - shifted) / orig
     }
 
 }

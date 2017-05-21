@@ -13,6 +13,6 @@ const val gameHeight: Int = 20
 const val gameWidth: Int = 20
 const val blockSize = 15.0
 const val snakeDefaultSize: Int = 5
-val snakeVision = SnakeVision._1
+val snakeVision = SnakeVision._2
 val initOffset: Int = Math.min(gameHeight / 5, gameWidth / 5)
 

@@ -15,7 +15,7 @@ val resourceBase = File(System.getenv("AppData"), ".sNNake_2.1")
 class NNGenetics(key: String,
                  val net: NeuralNet, // The Neural Net
                  val populationSize: Int = 100, // Max population size before a new generation
-                 val populationRetention: Double = 0.2, // Percent of population to keep for next generation
+                 val populationRetention: Double = 0.3, // Percent of population to keep for next generation
                  val mutationRate: Double = 0.2, // Percent of population to mutate
                  val mutationsPerList: Int = 2, // Number of items to mutate per given weight set
                  val mutationIncrement: Double = 1e-4, // For increment mutations, max value to increment/decrement

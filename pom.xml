@@ -60,7 +60,6 @@
                     <mainClass>ca.allanwang.snnake.SnakeApp</mainClass>
                     <appName>sNNake v2.1</appName>
                     <jfxMainAppJarName>${project.build.finalName}.jar</jfxMainAppJarName>
-                    <updateExistingJar>true</updateExistingJar>
                 </configuration>
             </plugin>
         </plugins>

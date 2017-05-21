@@ -39,6 +39,27 @@ A Neural Net implementation written from scratch, containing
 
 Combined, these two portions work to teach a NN how to play the game, without any training explicitly done by a player.
 
+## Snake Visions
+
+The following are the implemented snake visions used to compute the Neural Net inputs: (name: (matrix size) (best fitness))
+
+* V_1: (1 x 6), F(0.6)
+    1. blocks to left of snake before nearest obstacle
+    2. blocks in front of snake before nearest obstacle
+    3. blocks to right of snake before nearest obstacle
+    4. horizontal block count to closest apple (right is positive)
+    5. vertical block count to closest apple (up is positive)
+    6. snake size/(game height * width)
+* V_2: (3 x 5), F(1.9)
+    * The following is done for each perspective as the snake turns to the left, heads straight, or goes to the right
+    1. block rating at new position (obstacle: -1, empty: 0, apple: 1)
+    2. block rating directly to the left (obstacle: -1, empty: 0, apple: 1)
+    3. block rating directly in front (obstacle: -1, empty: 0, apple: 1)
+    4. block rating directly to the right (obstacle: -1, empty: 0, apple: 1)
+    5. apple delta (distance from closest apple before - distance from closest apple now)/distance from closest apple before
+    
+ 
+
 ## Special Thanks To
 * [@wollip](https://github.com/wollip) for his [Snake game implementation](https://github.com/wollip/snake)
     * Which helped me create [sNNake 2.0](https://github.com/AllanWang/sNNake-2.0)
@@ -48,3 +69,4 @@ Combined, these two portions work to teach a NN how to play the game, without an
     * Which greatly simplified the concepts of Neural Networks
 * [@edvin](https://github.com/edvin) for [TornadoFx](https://github.com/edvin/tornadofx)
     * Which greatly simplified the UI creation
+   

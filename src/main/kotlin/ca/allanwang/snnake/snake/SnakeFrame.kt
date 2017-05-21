@@ -3,6 +3,7 @@ package ca.allanwang.snnake.snake
 import ca.allanwang.snnake.blockSize
 import ca.allanwang.snnake.gameHeight
 import ca.allanwang.snnake.gameWidth
+import ca.allanwang.snnake.snakeVision
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
 import javafx.scene.control.Button
@@ -93,8 +94,11 @@ class SnakeView : View("sNNake 2.1") {
                             text = controller.playButton(text)
                         }
                     }
-                    generation = label("Generation -") {
+                    label("Vision$snakeVision") {
                         addClass(SnakeStyle.paddingVertical)
+                    }
+                    generation = label("Generation -") {
+                        addClass(SnakeStyle.paddingBottom)
                     }
                     fitness = label("Max Fitness: -") {
                         addClass(SnakeStyle.paddingBottom)
