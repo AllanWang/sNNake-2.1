@@ -39,7 +39,7 @@ class SnakeView : View("sNNake 2.1") {
     lateinit var play: Button
     private lateinit var fps: Label
     internal lateinit var generation: Label
-    internal  lateinit var fitness: Label
+    internal lateinit var fitness: Label
 
     init {
         with(root) {
@@ -96,7 +96,15 @@ class SnakeView : View("sNNake 2.1") {
                     generation = label("Generation -") {
                         addClass(SnakeStyle.paddingVertical)
                     }
-                    fitness = label("Max Fitness: -")  {
+                    fitness = label("Max Fitness: -") {
+                        addClass(SnakeStyle.paddingBottom)
+                    }
+                    button("Open Data Directory") {
+                        action {
+                            controller.sVision.openDirectory()
+                        }
+                    }
+                    spacer {
                         addClass(SnakeStyle.paddingBottom)
                     }
                 }

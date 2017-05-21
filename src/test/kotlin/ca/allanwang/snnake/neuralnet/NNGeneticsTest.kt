@@ -36,12 +36,11 @@ class NNGeneticsTest {
     @Test
     fun rw() {
         nng.clearFile(nng.populationFile)
-        assertEquals(0, nng.read(nng.populationFile).size, "population file should be empty")
+        assertEquals(0, nng.readPopulation().size, "population file should be empty")
         nng.write(nng.populationFile, first)
-        val data = nng.read(nng.populationFile)
+        val data = nng.readPopulation()
         assertEquals(1, data.size, "population file should only have one list")
-        assertEquals(first, data.first().first, "population file should have list we just wrote")
-        assertEquals(-1, data.first().second, "data should have generation -1")
+        assertEquals(first, data.first(), "population file should have list we just wrote")
     }
 
     @Test
@@ -70,11 +69,6 @@ class NNGeneticsTest {
         assertEquals(nng.mutationsPerList, diff.sumBy { v -> if (v == 0.0) 0 else 1 }, "mutate should change exactly ${nng.mutationsPerList} items")
     }
 
-    @Test
-    fun setFitnessOfCurrent() {
-        //TODO
-    }
-
     fun fillPopulation() {
         nng.populationMap.apply {
             put(List<Double>(6, { 2.0 }), 2.0)
@@ -90,15 +84,9 @@ class NNGeneticsTest {
         nng.clearFile(nng.bestFile)
         fillPopulation()
         nng.updateGeneration()
-        val best = Triple(first.toList(), 1, 4.0)
-        assertEquals(best, nng.read(nng.bestFile).first())
-//        assertEquals(2, nng.generation, "Generation should be incremented")
+        val best = Triple(first.toList(), 0, 4.0)
+        assertEquals(best, nng.getLastBest())
         assertEquals(0, nng.populationMap.size, "Population map should be cleared after updateGeneration")
-        assertTrue(nng.populationSize <= nng.read(nng.populationFile).size, "population file should now hold at least ${nng.populationSize} items")
-    }
-
-    @Test
-    fun runGeneration() {
-        //TODO
+        assertTrue(nng.populationSize <= nng.readPopulation().size, "population file should now hold at least ${nng.populationSize} items")
     }
 }

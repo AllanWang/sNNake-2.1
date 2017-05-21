@@ -56,7 +56,6 @@ enum class Directions(val northShift: Int) {
     abstract val left: Lazy<Directions>
     abstract val right: Lazy<Directions>
     abstract fun relativeAxis(up: Double, right: Double): Pair<Double, Double>
-    fun relativeAxis(up: Int, right: Int) = relativeAxis(up.toDouble(), right.toDouble())
 }
 
 //maximum of 9 values; snake id (if it exists) will by multiplied by 10 and added to the ordinal
@@ -92,11 +91,10 @@ enum class MapData {
     abstract fun color(rect: Rectangle, id: SnakeId)
 
     companion object {
-        val values: Array<MapData> = MapData.values() // cache array data so it doesn't random recreated each time
+        val values: Array<MapData> = MapData.values() // cache array data so it doesn't get recreated each time
         fun get(i: Int): MapData {
-            var ii = i
-            if (ii >= values.size) ii %= values.size
-            if (ii < 0) ii += values.size
+            var ii = i % 10
+            if (ii < 0) ii += 10
             return values[ii]
         }
 

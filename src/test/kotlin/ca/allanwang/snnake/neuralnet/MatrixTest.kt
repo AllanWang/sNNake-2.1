@@ -192,4 +192,10 @@ class MatrixTest {
         assertEquals(doubleArrayOf(2.0, 5.0).contentToString(), matrix.col(1).contentToString(), "Second column is 2, 5")
     }
 
+    @Test
+    fun toList() {
+        val list = listOf(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+        assertEquals(list, matrix.toList(), "List flatmap failed")
+    }
+
 }

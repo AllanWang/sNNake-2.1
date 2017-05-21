@@ -42,7 +42,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     }
 
     /**
-     * Replace [matrix] content without creating a new Matrix
+     * Replaces [matrix] content without creating a new Matrix
      */
     fun set(m: Matrix): Matrix {
         this.matrix = m.deepClone().matrix
@@ -52,9 +52,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     /**
      * Sets all values of [matrix] to [value]
      */
-    fun fill(value: Double): Matrix {
-        return forEach { _ -> value }
-    }
+    fun fill(value: Double): Matrix = forEach { _ -> value }
 
     operator fun get(row: Int): DoubleArray = matrix[row]
     operator fun get(row: Int, col: Int): Double = matrix[row][col]
@@ -62,11 +60,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     /**
      * Concatenates matrix into a single list, row by row
      */
-    fun toList(): List<Double> {
-        val list = mutableListOf<Double>()
-        matrix.forEach { row -> list.addAll(row.toList()) }
-        return list
-    }
+    fun toList(): List<Double> = matrix.flatMap { row -> row.toList() }
 
     /**
      * Flattens [matrix] so that it only has one row, where the value at each index is the sum of the column at that given index

@@ -2,9 +2,9 @@ package ca.allanwang.snnake.snake
 
 import ca.allanwang.snnake.gameHeight
 import ca.allanwang.snnake.gameWidth
-import ca.allanwang.snnake.neuralnet.Matrix
 import ca.allanwang.snnake.neuralnet.NNGenetics
 import ca.allanwang.snnake.neuralnet.NeuralNet
+import ca.allanwang.snnake.snakeVision
 import javafx.animation.Animation
 import javafx.animation.KeyFrame
 import javafx.animation.Timeline
@@ -40,7 +40,7 @@ interface SnakeGameContract {
 
     fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int)
 
-    fun getNeuralOutput(input: Matrix): Matrix
+    fun getNeuralNet(): NeuralNet
 }
 
 enum class StepStage {
@@ -52,7 +52,8 @@ enum class StepStage {
 }
 
 class SnakeGame : Controller(), SnakeGameContract {
-    override fun getNeuralOutput(input: Matrix): Matrix = nng.getOutput(input)
+
+    override fun getNeuralNet(): NeuralNet = nng.net
 
     override fun getApples(): List<C> = apples
 
@@ -105,11 +106,12 @@ class SnakeGame : Controller(), SnakeGameContract {
     var snakes = mutableListOf<Snake>()
     private var applesToSpawn = 1
     private var stepsAlive = 0L
-    private val stepsCap = 200L
+    private val stepsCap = ((gameWidth + gameHeight) * 5).toDouble()
     val stepThreshold: Double
-        get() = stepsAlive.toDouble() / stepsCap.toDouble()
+        get() = stepsAlive.toDouble() / stepsCap
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { MapData.EMPTY.ordinal }) })
-    val nng = NNGenetics("sNNake", NeuralNet(6, 6, 3))
+    val sVision = snakeVision
+    val nng = NNGenetics(sVision.key, sVision.neuralNet)
     private val apples = mutableListOf<C>()
 
     /**
@@ -237,9 +239,9 @@ class SnakeGame : Controller(), SnakeGameContract {
             s.terminate()
         }
         snakes.clear()
-        snakes.add(Snake(SnakeId._1, isHuman(snakeFrame.player1), this))
+        snakes.add(Snake(SnakeId._1, isHuman(snakeFrame.player1), this, sVision))
         if ((snakeFrame.player2.selectedToggle as RadioButton).text != NONE)
-            snakes.add(Snake(SnakeId._2, isHuman(snakeFrame.player2), this))
+            snakes.add(Snake(SnakeId._2, isHuman(snakeFrame.player2), this, sVision))
         gameMap.forEachIndexed { y, row ->
             row.forEachIndexed {
                 x, _ ->
@@ -272,9 +274,9 @@ class SnakeGame : Controller(), SnakeGameContract {
     /**
      * Apple should not generate within 3 dp from a snake head and should not rest on the snake's body
      * Apple should also not be on top of another existing apple
-
+     *
      * @param c apple position
-     * *
+     *
      * @return true if valid, false otherwise
      */
     private fun validateApple(c: C): Boolean {

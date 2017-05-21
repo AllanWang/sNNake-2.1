@@ -10,6 +10,8 @@ import java.io.PrintWriter
  */
 class NNGeneticsException(message: String) : RuntimeException(message)
 
+val resourceBase = File(System.getenv("AppData"), ".sNNake_2.1")
+
 class NNGenetics(key: String,
                  val net: NeuralNet, // The Neural Net
                  val populationSize: Int = 100, // Max population size before a new generation
@@ -25,17 +27,17 @@ class NNGenetics(key: String,
     var generationCallback: ((Int, List<Double>, Double) -> Unit)? = generationCallback
         set(value) {
             field = value
-            value?.invoke(generation, emptyList(), 0.0)
+            value?.invoke(bestData.second, bestData.first, bestData.third)
         }
-    var generation = 0
+    var generation = -1
         private set
     private val iterationList = mutableListOf<Double>()
-    private val resourceBase: String = javaClass.getResource("/")?.file ?: throw NNGeneticsException("Resource base not found")
-    internal val bestFile = file(resourceBase, "$key/$key.best.txt")
-    internal val populationFile = file(resourceBase, "$key/$key.population.txt")
+    internal val bestFile = file(resourceBase.absolutePath, "$key/$key.best.txt")
+    internal val populationFile = file(resourceBase.absolutePath, "$key/$key.population.txt")
     internal val populationMap = hashMapOf<List<Double>, Double>()
     private val rnd = java.util.Random()
     lateinit var dataIter: Iterator<List<Double>>
+    lateinit var bestData: Triple<List<Double>, Int, Double>
     val crossPoints: IntArray
 
     init {
@@ -45,6 +47,7 @@ class NNGenetics(key: String,
         if (crossPointList.first() < 0) throw NNGeneticsException("Crosspoints are indices and cannot be less than 0; cross ${crossPointList.first()} found")
         if (crossPointList.first() != 0) crossPointList.add(0, 0)
         this.crossPoints = crossPointList.toIntArray()
+        if (iterations < 1) throw NNGeneticsException("iteration count should be at least 1; currently $iterations")
         if (populationSize < 2) throw NNGeneticsException("populationSize should be greater than 2; currently $populationSize")
         if (populationRetention < 0) throw NNGeneticsException("populationRetention should be greater than 0; currently $populationRetention")
         prepareGeneration()
@@ -136,18 +139,18 @@ class NNGenetics(key: String,
             }
         }
         writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)} # ${maxEntry.value}") }
-        prepareGeneration()
         generationCallback?.invoke(generation, maxEntry!!.key, maxEntry.value)
+        prepareGeneration()
     }
 
     internal fun prepareGeneration() {
-        if (generation == 0) {
-            val bestData = read(bestFile)
-            if (bestData.isNotEmpty() && bestData.last().second != -1) generation = bestData.last().second
-            generationCallback?.invoke(generation, bestData.last().first, bestData.last().third)
+        if (generation == -1) {
+            bestData = getLastBest()
+            generation = bestData.second
+            generationCallback?.invoke(bestData.second, bestData.first, bestData.third)
         }
         generation++
-        dataIter = read(populationFile).map { pair -> pair.first }.iterator()
+        dataIter = readPopulation().iterator()
         setWeights()
     }
 
@@ -175,34 +178,39 @@ class NNGenetics(key: String,
     internal fun write(file: File, vararg lists: List<Double>) = writer(file).use { w -> lists.forEach { list -> w.println(listToString(list)) } }
     internal fun writer(file: File, append: Boolean = true) = PrintWriter(BufferedWriter(FileWriter(file, append)))
     /**
-     * Reader helper, mainly to read best.txt
-     * Extracts each line into a Triple containing the weights, the generation, and the fitness value
+     * Reader helper, for best.txt
+     * Extracts last line into a Triple containing the weights, the generation, and the fitness value
      */
-    internal fun read(file: File): List<Triple<List<Double>, Int, Double>> {
-        val list = mutableListOf<Triple<List<Double>, Int, Double>>()
-        file.readLines().forEach {
-            s ->
-            if (!s.isBlank()) {
-                var generation = -1
-                var line = s
-                if (s.contains(":")) {
-                    val split = s.split(":")
-                    generation = split[0].trim().toInt()
-                    line = split[1]
-                }
-                var fitness = 0.0
-                if (line.contains('#')) {
-                    val split = line.split('#')
-                    line = split[0]
-                    fitness = split[1].trim().toDouble()
-                }
-                list.add(Triple(stringToList(line), generation, fitness))
-            }
+    internal fun getLastBest(): Triple<List<Double>, Int, Double> {
+        val lines = bestFile.readLines()
+        if (lines.isEmpty() || lines.last().isBlank()) return Triple(emptyList(), -1, 0.0)
+        val s = lines.last()
+        var generation = -1
+        var line = s
+        if (s.contains(":")) {
+            val split = s.split(":")
+            generation = split[0].trim().toInt()
+            line = split[1]
         }
-        return list
+        var fitness = 0.0
+        if (line.contains('#')) {
+            val split = line.split('#')
+            line = split[0]
+            fitness = split[1].trim().toDouble()
+        }
+        return Triple(stringToList(line), generation, fitness)
     }
 
-    internal fun clearFile(file: File) = writer(file, false).use { w -> w.print("") }
+    /**
+     * Reader helper for population.txt
+     * Extract each line and maps it into its weighting
+     */
+    internal fun readPopulation(): List<List<Double>> = populationFile.readLines().filter { s -> s.isNotBlank() }.map { s -> stringToList(s) }
+
+    internal fun clearFile(file: File) {
+        writer(file, false).use { w -> w.print("") }
+        if (file == bestFile) generation = 0
+    }
 
     internal fun rand(): Double = net.randomWeight()
     internal fun rand(max: Int): Int = rnd.nextInt(max)
