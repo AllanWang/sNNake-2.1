@@ -67,48 +67,47 @@ class SnakeGame : Controller(), SnakeGameContract {
      * [prevHeadValue] prev map value at the location of their current head
      */
     override fun sendSnakeStatus(id: SnakeId, prevHeadValue: Int) {
-        when (prevHeadValue % 10) {
-            MapData.EMPTY.ordinal -> return
-            MapData.APPLE.ordinal -> {
+        when (MapData.get(prevHeadValue)) {
+            MapData.EMPTY -> return
+            MapData.APPLE -> {
                 score(id.ordinal, FlagScore.APPLE)
                 applesToSpawn++
             }
-            MapData.SNAKE_BODY.ordinal -> {
+            MapData.SNAKE_BODY -> {
                 snakes[id.ordinal].terminate()
                 val otherSnake = MapData.getSnake(prevHeadValue)
                 if (otherSnake != id)
                     score(otherSnake.ordinal, FlagScore.CAPTURED_SNAKE)
             }
-            MapData.SNAKE_HEAD.ordinal -> {
+            MapData.SNAKE_HEAD -> {
                 snakes[id.ordinal].terminate()
                 val otherSnake = MapData.getSnake(prevHeadValue)
                 snakes[otherSnake.ordinal].terminate()
             }
-            MapData.INVALID.ordinal -> {
+            MapData.INVALID -> {
                 snakes[id.ordinal].terminate()
-            }
-            else -> {
-                println("Unknown status $prevHeadValue from snake ${id.ordinal}")
             }
         }
     }
 
     fun score(id: Int, score: FlagScore) {
-        snakes[id].score(score, stepThreshold)
-        stepsAlive = 0L
+        snakes[id].score(score, stepsWithoutProgress.toDouble() / stepsCap.toDouble())
+        stepsWithoutProgress = 0
     }
 
     lateinit var snakeFrame: SnakeView
     private var timeline = Timeline()
     var fps = fpsDefault
+        set(value) {
+            field = value
+            updateTimer(true)
+        }
     private var pause = true
     private var gameCont = false
     var snakes = mutableListOf<Snake>()
-    private var applesToSpawn = 1
-    private var stepsAlive = 0L
-    private val stepsCap = ((gameWidth + gameHeight) * 5).toDouble()
-    val stepThreshold: Double
-        get() = stepsAlive.toDouble() / stepsCap
+    private var applesToSpawn: Int = 1
+    private var stepsWithoutProgress: Int = 0
+    private val stepsCap: Int = (gameWidth + gameHeight) * 5
     val gameMap = Array(gameHeight, { IntArray(gameWidth, { MapData.EMPTY.ordinal }) })
     val sVision = snakeVision
     val nng = NNGenetics(sVision.key, sVision.neuralNet)
@@ -133,11 +132,9 @@ class SnakeGame : Controller(), SnakeGameContract {
                     if (event.isControlDown) {
                         when (event.code) {
                             KeyCode.R -> newGame()
-                            else -> {
-                                consume = false
-                            }
+                            else -> consume = false
                         }
-                    }
+                    } else consume = false
                 }
             }
             if (consume) event.consume()
@@ -180,11 +177,6 @@ class SnakeGame : Controller(), SnakeGameContract {
         }
     }
 
-    fun changeFps(fps: Double) {
-        this.fps = fps
-        updateTimer(true)
-    }
-
     /**
      * Updates the timer based on the following changes:
      * Play/pause
@@ -196,9 +188,7 @@ class SnakeGame : Controller(), SnakeGameContract {
         if (!pause) snakeFrame.grid.requestFocus()
         if (recreate) {
             if (timeline.status == Animation.Status.RUNNING) timeline.stop()
-            timeline = Timeline(KeyFrame(Duration.millis(1000 / fps), EventHandler<ActionEvent> {
-                playTurn()
-            }))
+            timeline = Timeline(KeyFrame(Duration.millis(1000 / fps), EventHandler<ActionEvent> { playTurn() }))
             timeline.cycleCount = Animation.INDEFINITE
             if (!pause) timeline.playFromStart()
         } else if (pause && timeline.status == Animation.Status.RUNNING) timeline.stop()
@@ -208,9 +198,7 @@ class SnakeGame : Controller(), SnakeGameContract {
     /**
      * Checks if player is a human
      */
-    fun isHuman(group: ToggleGroup): Boolean {
-        return (group.selectedToggle as RadioButton).text == HUMAN
-    }
+    fun isHuman(group: ToggleGroup): Boolean = (group.selectedToggle as RadioButton).text == HUMAN
 
     /**
      * After [stepsCap], makes sure that if there are only neural nets, they are making progress
@@ -218,12 +206,12 @@ class SnakeGame : Controller(), SnakeGameContract {
      */
     fun checkForProgress() {
         if (!gameCont || pause) return
-        if (snakes.any { s -> !s.dead && s.human }) return
-        val sNNakes = snakes.filter { s -> !s.dead && !s.human }
-        if (sNNakes.isNotEmpty() && sNNakes.none { snake -> snake.hasScoreChanged() }) {
-            nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score } / snakes.size))
-            newGame()
-        } else snakes.forEach { s -> s.flushScore() }
+        if (snakes.any { s -> !s.dead && s.human }) {
+            stepsWithoutProgress = 0
+            return
+        }
+        nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score } / snakes.size))
+        newGame()
     }
 
     /**
@@ -233,21 +221,13 @@ class SnakeGame : Controller(), SnakeGameContract {
         gameCont = true
         pause = false
         updateTimer(true)
-        stepsAlive = 0L
-        snakes.forEach {
-            s ->
-            s.terminate()
-        }
+        stepsWithoutProgress = 0
+        snakes.forEach(Snake::terminate)
         snakes.clear()
         snakes.add(Snake(SnakeId._1, isHuman(snakeFrame.player1), this, sVision))
         if ((snakeFrame.player2.selectedToggle as RadioButton).text != NONE)
             snakes.add(Snake(SnakeId._2, isHuman(snakeFrame.player2), this, sVision))
-        gameMap.forEachIndexed { y, row ->
-            row.forEachIndexed {
-                x, _ ->
-                gameMap[y][x] = MapData.EMPTY.ordinal
-            }
-        }
+        gameMap.forEachIndexed { y, row -> row.forEachIndexed { x, _ -> gameMap[y][x] = MapData.EMPTY.ordinal } }
         applesToSpawn = snakes.size
         spawnApples()
     }
@@ -299,31 +279,19 @@ class SnakeGame : Controller(), SnakeGameContract {
             gameEnded()
             return
         }
-        if (stepsAlive > stepsCap) checkForProgress()
-        StepStage.values.forEach {
-            stage ->
-            snakes.forEach {
-                snake ->
-                snake.step(stage)
-            }
-        }
+        if (stepsWithoutProgress > stepsCap) checkForProgress()
+        StepStage.values.forEach { stage -> snakes.forEach { it.step(stage) } }
         spawnApples()
-        stepsAlive++
+        stepsWithoutProgress++
         draw(gameMap)
-        gameCont = false
-        snakes.forEach {
-            snake ->
-            gameCont = gameCont || !snake.dead
-        }
+        gameCont = snakes.any { !it.dead }
     }
 
     /**
      * Marks the end of the game; all snakes are dead
      */
     fun gameEnded() {
-//        println("Game Over")
-//        snakeFrame.play.text = "Start"
-        nng.setFitnessOfCurrent((snakes.sumByDouble { s -> s.score } / snakes.size))
+        nng.setFitnessOfCurrent((snakes.sumByDouble(Snake::score) / snakes.size))
         newGame()
     }
 

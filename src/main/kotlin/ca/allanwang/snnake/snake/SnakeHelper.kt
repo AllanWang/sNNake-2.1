@@ -99,18 +99,12 @@ enum class MapData(val rating: Double) {
         }
 
         fun getSnake(i: Int): SnakeId = SnakeId.get(i / 10)
-        fun color(rect: Rectangle, i: Int) {
-            get(i).color(rect, getSnake(i))
-        }
+        fun color(rect: Rectangle, i: Int) = get(i).color(rect, getSnake(i))
     }
 }
 
 enum class FlagScore(val points: Double, val sizeIncrease: Int) {
     APPLE(1.0, 1), CAPTURED_SNAKE(10.0, 5)
-}
-
-enum class FlagTerminate {
-    WALL, RESET
 }
 
 data class C(val x: Int, val y: Int) {
@@ -123,11 +117,7 @@ data class C(val x: Int, val y: Int) {
         return original
     }
 
-    fun get(map: Array<IntArray>): Int {
-        if (x < 0 || y < 0 || y >= map.size || x >= map[0].size)
-            return MapData.INVALID.ordinal
-        return map[y][x]
-    }
+    fun get(map: Array<IntArray>): Int = if (x < 0 || y < 0 || y >= map.size || x >= map[0].size) MapData.INVALID.ordinal else map[y][x]
 
     fun getRating(map: Array<IntArray>): Double = MapData.get(get(map)).rating
 
@@ -159,9 +149,7 @@ class SnakeQueue(private var maxSize: Int = snakeDefaultSize) : LinkedList<C>() 
         return true
     }
 
-    override fun remove(): C {
-        return super.removeLast()
-    }
+    override fun remove(): C = super.removeLast()
 
     val head: C
         get() = first
@@ -186,9 +174,7 @@ class SnakeQueue(private var maxSize: Int = snakeDefaultSize) : LinkedList<C>() 
         trim()
     }
 
-    @JvmOverloads fun incrementMaxSize(i: Int = 1) {
-        setMaxSize(maxSize() + i)
-    }
+    @JvmOverloads fun incrementMaxSize(i: Int = 1) = setMaxSize(maxSize() + i)
 
     fun maxSize(): Int = maxSize
 

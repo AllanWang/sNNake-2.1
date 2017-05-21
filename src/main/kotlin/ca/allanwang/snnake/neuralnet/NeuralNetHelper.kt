@@ -37,20 +37,3 @@ enum class Random {
         val rnd = java.util.Random()
     }
 }
-
-//TODO
-enum class Optimizer {
-    BFGS;
-
-    /**
-     * [net]            NeuralNet containing weights and functions
-     * [args]           Pair<input, output>
-     * [maxIterations]  Maximum number of iterations to go through
-     * [gtol]           Gradient norm max before termination
-     * [eps]            Step size (default is sqrt of smallest recognizable step)
-     */
-    fun minimize(net: NeuralNet, args: Pair<Matrix, Matrix>?, maxIterations: Int = 200, gtol: Double = 1e-5, callback: ((List<Double>) -> Unit)?) {
-        val weights = net.getWeights()
-        val eps: Double = Math.sqrt(Math.ulp(1.0)) // step size
-    }
-}

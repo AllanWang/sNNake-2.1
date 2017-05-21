@@ -89,4 +89,10 @@ class NNGeneticsTest {
         assertEquals(0, nng.populationMap.size, "Population map should be cleared after updateGeneration")
         assertTrue(nng.populationSize <= nng.readPopulation().size, "population file should now hold at least ${nng.populationSize} items")
     }
+
+    @Test
+    fun listString() {
+        val list = listOf(2.0, 1.0, 3.0, 5.0)
+        assertEquals(list, nng.stringToList(nng.listToString(list)), "List String conversion should be reversible")
+    }
 }

@@ -81,7 +81,7 @@ class SnakeView : View("sNNake 2.1") {
                             if (oldR != newR) {
                                 value = newR
                                 fps.text = "${newR.toLong()} fps"
-                                controller.changeFps(newR)
+                                controller.fps = newR
                             }
                         }
                     }

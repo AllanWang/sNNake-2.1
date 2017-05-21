@@ -19,26 +19,18 @@ class Matrix(var matrix: Array<DoubleArray>) {
     val size: Int
         get() = rows * cols
 
+    constructor(rows: Int, cols: Int, vararg values: Int) : this(rows, cols, values.toList().map(Int::toDouble))
     constructor(rows: Int, cols: Int, vararg values: Double) : this(rows, cols, values.toList())
     constructor(rows: Int, cols: Int, values: List<Double>) : this(rows, cols) {
         if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch: $rows by $cols with ${values.size} values")
         forEach { y, x, _ -> values[y * cols + x] }
     }
 
-    constructor(rows: Int, cols: Int, vararg values: Int) : this(rows, cols) {
-        if (values.size != rows * cols) throw MatrixException("Matrix row col creation mismatch: $rows by $cols with ${values.size} values")
-        forEach { y, x, _ -> values[y * cols + x].toDouble() }
-    }
-
     constructor(rows: Int, cols: Int) : this(rows, cols, 0.0)
     constructor(rows: Int, cols: Int, value: Double) : this(Array(rows, { DoubleArray(cols, { value }) }))
 
     init {
-        matrix.forEach {
-            row ->
-            if (row.size != cols)
-                throw MatrixException("Matrix has varying row lengths")
-        }
+        matrix.forEach { row -> if (row.size != cols) throw MatrixException("Matrix has varying row lengths") }
     }
 
     /**
@@ -55,12 +47,11 @@ class Matrix(var matrix: Array<DoubleArray>) {
     fun fill(value: Double): Matrix = forEach { _ -> value }
 
     operator fun get(row: Int): DoubleArray = matrix[row]
-    operator fun get(row: Int, col: Int): Double = matrix[row][col]
 
     /**
      * Concatenates matrix into a single list, row by row
      */
-    fun toList(): List<Double> = matrix.flatMap { row -> row.toList() }
+    fun toList(): List<Double> = matrix.flatMap(DoubleArray::toList)
 
     /**
      * Flattens [matrix] so that it only has one row, where the value at each index is the sum of the column at that given index
@@ -101,10 +92,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     private fun multiply(row: Int, col: Int, m: Matrix, n: Matrix): Double {
         var result = 0.0
-        m[row].forEachIndexed {
-            i, value ->
-            result += value * n[i][col]
-        }
+        m[row].forEachIndexed { i, value -> result += value * n[i][col] }
         return result
     }
 
@@ -132,7 +120,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
 
     fun row(i: Int): DoubleArray = if (i < 0 || i > rows) doubleArrayOf() else matrix[i].clone()
 
-    fun col(i: Int): DoubleArray = if (i < 0 || i > cols) doubleArrayOf() else DoubleArray(rows, { j -> matrix[j][i] })
+    fun col(i: Int): DoubleArray = if (i < 0 || i > cols) doubleArrayOf() else DoubleArray(rows, { matrix[it][i] })
 
     fun forEach(mutation: (value: Double) -> Double): Matrix = forEach { _, _, value -> mutation(value) }
 
@@ -142,13 +130,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
     }
 
     private fun forEachNoClone(mutation: (y: Int, x: Int, value: Double) -> Double): Matrix {
-        matrix.forEachIndexed {
-            y, row ->
-            row.forEachIndexed {
-                x, v ->
-                matrix[y][x] = mutation(y, x, v)
-            }
-        }
+        matrix.forEachIndexed { y, row -> row.forEachIndexed { x, v -> matrix[y][x] = mutation(y, x, v) } }
         return this
     }
 
@@ -171,10 +153,7 @@ class Matrix(var matrix: Array<DoubleArray>) {
         matrix.forEach {
             row ->
             builder.append("| ")
-            row.forEach {
-                v ->
-                builder.append(doubleString(v)).append(" ")
-            }
+            row.forEach { v -> builder.append(doubleString(v)).append(" ") }
             builder.append("|\n")
         }
         return builder.toString()

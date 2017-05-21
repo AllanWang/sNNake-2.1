@@ -35,7 +35,6 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
         }
     val positions = SnakeQueue()
     var score = 0.0
-    private var prevScore = 0.0
     private val map = gameContract.getMap()
     var dead = false
     private var prevHeadValue = 0
@@ -82,12 +81,6 @@ class Snake(val id: SnakeId, human: Boolean, val gameContract: SnakeGameContract
         score += points.points * (1.0 - 0.2 * stepThreshold)
         positions.incrementMaxSize(points.sizeIncrease)
     }
-
-    fun flushScore() {
-        prevScore = score
-    }
-
-    fun hasScoreChanged() = prevScore < score
 
     fun step(stage: StepStage) {
         if (dead) return

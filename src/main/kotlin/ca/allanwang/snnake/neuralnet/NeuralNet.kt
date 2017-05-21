@@ -33,11 +33,7 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
         return this
     }
 
-    fun getWeights(): List<Double> {
-        val weights = mutableListOf<Double>()
-        matrices.forEach { matrix -> weights.addAll(matrix.toList()) }
-        return weights
-    }
+    fun getWeights(): List<Double> = matrices.flatMap(Matrix::toList)
 
     fun setWeightsAt(index: Int, vararg values: Double): NeuralNet = setWeightsAt(index, values.toList())
     fun setWeightsAt(index: Int, values: List<Double>): NeuralNet {
@@ -129,11 +125,7 @@ class NeuralNet(vararg layerSizes: Int, var activator: Activator = Activator.SIG
     /**
      * Calculates cost function prime, then ravels and concatenates the resulting matrices
      */
-    fun computeGradients(input: Matrix, output: Matrix): List<Double> {
-        val grad = mutableListOf<Double>()
-        costFunctionPrime(input, output).forEach { matrix -> grad.addAll(matrix.toList()) }
-        return grad
-    }
+    fun computeGradients(input: Matrix, output: Matrix): List<Double> = costFunctionPrime(input, output).flatMap(Matrix::toList)
 
     override fun equals(other: Any?): Boolean = (other is NeuralNet &&
             inputSize == other.inputSize && outputSize == other.outputSize && matrices contentDeepEquals other.matrices)

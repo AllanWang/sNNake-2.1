@@ -18,7 +18,7 @@ class NNGenetics(key: String,
                  val populationRetention: Double = 0.3, // Percent of population to keep for next generation
                  val mutationRate: Double = 0.2, // Percent of population to mutate
                  val mutationsPerList: Int = 2, // Number of items to mutate per given weight set
-                 val mutationIncrement: Double = 1e-4, // For increment mutations, max value to increment/decrement
+                 val mutationIncrement: Double = 1e-3, // For increment mutations, max value to increment/decrement
                  val iterations: Int = 3, // Number of times to test a given weight before moving onto the next one
                  crossPoints: IntArray = intArrayOf(2), // Joints to cross two parents when creating their children
                  generationCallback: ((Int, List<Double>, Double) -> Unit)? = null  // Callback function to receive generation update reports
@@ -160,11 +160,7 @@ class NNGenetics(key: String,
         return builder.trim().trimEnd(',').toString()
     }
 
-    internal fun stringToList(s: String): List<Double> {
-        val list = mutableListOf<Double>()
-        s.trim().split(',').forEach { ss -> list.add(ss.toDouble()) }
-        return list
-    }
+    internal fun stringToList(s: String): List<Double> = s.trim().split(',').map(String::toDouble)
 
     internal fun file(vararg dir: String): File {
         val file = File(dir.joinToString(separator = "/", transform = { s -> s.trim('/') }))
