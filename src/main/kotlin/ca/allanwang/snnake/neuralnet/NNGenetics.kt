@@ -21,7 +21,8 @@ class NNGenetics(key: String,
                  val mutationIncrement: Double = 1e-3, // For increment mutations, max value to increment/decrement
                  val iterations: Int = 3, // Number of times to test a given weight before moving onto the next one
                  crossPoints: IntArray = intArrayOf(2), // Joints to cross two parents when creating their children
-                 generationCallback: ((Int, List<Double>, Double) -> Unit)? = null  // Callback function to receive generation update reports
+                 generationCallback: ((Int, List<Double>, Double) -> Unit)? = null, // Callback function to receive generation update reports
+                 val writeToFile: Boolean = true // Write population and best data to files
 ) {
 
     var generationCallback: ((Int, List<Double>, Double) -> Unit)? = generationCallback
@@ -36,7 +37,7 @@ class NNGenetics(key: String,
     internal val populationFile = file(resourceBase.absolutePath, "$key/$key.population.txt")
     internal val populationMap = hashMapOf<List<Double>, Double>()
     private val rnd = java.util.Random()
-    lateinit var dataIter: Iterator<List<Double>>
+    var dataIter: Iterator<List<Double>> = emptyList<List<Double>>().iterator()
     lateinit var bestData: Triple<List<Double>, Int, Double>
     val crossPoints: IntArray
 
@@ -119,27 +120,31 @@ class NNGenetics(key: String,
         best.sortBy { list -> populationMap[list] }     // sort by fitness
         best = best.subList(Math.min((best.size.toDouble() * (1.0 - populationRetention)).toInt(), best.size - 2), best.size)   // get the better sublist
         populationMap.clear()
-        clearFile(populationFile)
+        if (writeToFile) clearFile(populationFile)
         //generate new population data
-        writer(populationFile).use {
-            w ->
-            var count = 0
-            while (count < populationSize) {
-                val first = best[rand(best)]
-                var second: List<Double>
-                do {
-                    second = best[rand(best)]
-                } while (first == second)
-                val children = breed(first, second)
-                if (rnd.nextDouble() < mutationRate) mutate(children.first)
-                w.println(listToString(children.first))
-                if (rnd.nextDouble() < mutationRate) mutate(children.second)
-                w.println(listToString(children.second))
-                count += 2
-            }
+        val newPopulation = mutableListOf<List<Double>>()
+        var count = 0
+        while (count < populationSize) {
+            val first = best[rand(best)]
+            var second: List<Double>
+            do {
+                second = best[rand(best)]
+            } while (first == second)
+            val children = breed(first, second)
+            if (rnd.nextDouble() < mutationRate) mutate(children.first)
+            newPopulation.add(children.first)
+            if (rnd.nextDouble() < mutationRate) mutate(children.second)
+            newPopulation.add(children.second)
+            count += 2
         }
-        writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)} # ${maxEntry.value}") }
-        generationCallback?.invoke(generation, maxEntry!!.key, maxEntry.value)
+
+        if (writeToFile) {
+            writer(populationFile).use { w -> newPopulation.forEach { w.println(listToString(it)) } }
+            writer(bestFile).use { w -> w.println("$generation: ${listToString(maxEntry!!.key)} # ${maxEntry.value}") }
+        }
+        dataIter = newPopulation.iterator()
+        bestData = Triple(maxEntry!!.key, generation, maxEntry.value)
+        generationCallback?.invoke(bestData.second, bestData.first, bestData.third)
         prepareGeneration()
     }
 
@@ -150,7 +155,7 @@ class NNGenetics(key: String,
             generationCallback?.invoke(bestData.second, bestData.first, bestData.third)
         }
         generation++
-        dataIter = readPopulation().iterator()
+        if (writeToFile && !dataIter.hasNext()) dataIter = readPopulation().iterator()
         setWeights()
     }
 
@@ -164,6 +169,7 @@ class NNGenetics(key: String,
 
     internal fun file(vararg dir: String): File {
         val file = File(dir.joinToString(separator = "/", transform = { s -> s.trim('/') }))
+        if (!writeToFile) return file
         if (!file.parentFile.exists())
             file.parentFile.mkdirs()
         if (!file.exists())
@@ -178,6 +184,7 @@ class NNGenetics(key: String,
      * Extracts last line into a Triple containing the weights, the generation, and the fitness value
      */
     internal fun getLastBest(): Triple<List<Double>, Int, Double> {
+        if (!writeToFile) return Triple(emptyList(), -1, 0.0)
         val lines = bestFile.readLines()
         if (lines.isEmpty() || lines.last().isBlank()) return Triple(emptyList(), -1, 0.0)
         val s = lines.last()
