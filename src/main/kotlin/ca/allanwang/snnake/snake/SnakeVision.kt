@@ -121,6 +121,45 @@ enum class SnakeVision(vararg val layerSizes: Int, val activator: Activator = Ac
                 else -> prevDirection
             }
         }
+    },
+    _3(21, 15, 3) {
+        /**
+         * If the snake head is marked 'o' and facing up, we will feed it the data at all 'x'; '|' is the snake's body
+         * x x x x x
+         * x x x x x
+         * x x o x x
+         * x x | x x
+         * The remaining 3 inputs are the apple deltas if the snake were to go left, straight, or right respectively
+         * Returns a 1 x 3 matrix
+         */
+        override fun getInputMatrix(map: Array<IntArray>, head: C, prevDirection: Directions, apples: List<C>, snakeSize: Int): Matrix {
+            val closestApple = head closest (apples.filter { a -> a != head }) ?: head
+            val mapping = mutableListOf<C>()
+            for (y in 2 downTo -1)
+                for (x in -2..2) {
+                    if (x == 0 && y <= 0) continue // snake body is always -1, ignore
+                    mapping.add(head.shift(x, y, prevDirection))
+                }
+            val data = mapping.map { c -> c.getRating(map) }.toMutableList()
+            // add apple deltas
+            data.add(head.delta(closestApple, -1, 0, prevDirection))
+            data.add(head.delta(closestApple, 0, 1, prevDirection))
+            data.add(head.delta(closestApple, 1, 0, prevDirection))
+            return Matrix(1, 21, data)
+        }
+
+        /**
+         *  Returns next direction based on output matrix, which is of the format [left, straight, right]
+         *  The node with the biggest value will be the direction to go to
+         */
+        override fun getNextDirection(output: Matrix, prevDirection: Directions): Directions {
+            val outputList = output.toList()
+            return when (Math.max(Math.max(outputList[0], outputList[1]), outputList[2])) {
+                outputList[0] -> prevDirection.left.value
+                outputList[2] -> prevDirection.right.value
+                else -> prevDirection
+            }
+        }
     };
 
     val key

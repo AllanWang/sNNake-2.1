@@ -53,9 +53,9 @@ class SnakeVisionTest {
         val head = C(0, 0)
         val apple = (head closest apples)!!
         val result = Matrix(3, 5,
-                -1.0,-1.0, -1.0, -1.0, head.delta(apple, -1, 0),
-                -1.0,-1.0, -1.0, -1.0, head.delta(apple, 0, 1),
-                0.0,-1.0, 1.0, -1.0, head.delta(apple, 1, 0))
+                -1.0, -1.0, -1.0, -1.0, head.delta(apple, -1, 0),
+                -1.0, -1.0, -1.0, -1.0, head.delta(apple, 0, 1),
+                0.0, -1.0, 1.0, -1.0, head.delta(apple, 1, 0))
         verifyInputMatrix(SnakeVision._2, head, Directions.UP, "zero", result)
     }
 
@@ -64,9 +64,24 @@ class SnakeVisionTest {
         val head = C(2, 2)
         val apple = (head closest apples)!!
         val result = Matrix(3, 5,
-                -1.0,-1.0, 1.0, 0.0, head.delta(apple, 0, 1),
-                0.0,0.0, 0.0, 0.0, head.delta(apple, 1, 0),
-                0.0,0.0, -1.0, 0.0, head.delta(apple, 0, -1))
+                -1.0, -1.0, 1.0, 0.0, head.delta(apple, 0, 1),
+                0.0, 0.0, 0.0, 0.0, head.delta(apple, 1, 0),
+                0.0, 0.0, -1.0, 0.0, head.delta(apple, 0, -1))
         verifyInputMatrix(SnakeVision._2, head, Directions.RIGHT, "2", result)
+    }
+
+    @Test
+    fun inputMatrix3CenterLeft() {
+        val head = C(2, 2)
+        val apple = (head closest apples)!!
+        val result = Matrix(1, 21,
+                -1.0, -1.0, -1.0, 0.0, 0.0,
+                -1.0, 0.0, -1.0, -1.0, 0.0,
+                -1.0, 0.0, -1.0, 1.0,
+                0.0, 0.0, 0.0, 0.0,
+                head.delta(apple, 0, -1),
+                head.delta(apple, -1, 0),
+                head.delta(apple, 0, 1))
+        verifyInputMatrix(SnakeVision._3, head, Directions.LEFT, "2", result)
     }
 }

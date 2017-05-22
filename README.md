@@ -50,7 +50,7 @@ The following are the implemented snake visions used to compute the Neural Net i
     4. horizontal block count to closest apple (right is positive)
     5. vertical block count to closest apple (up is positive)
     6. snake size/(game height * width)
-* V_2: (3 x 5), F(1.9)
+* V_2: (3 x 5), F(7.7)
     * The following is done for each perspective as the snake turns to the left, heads straight, or goes to the right
     1. block rating at new position (obstacle: -1, empty: 0, apple: 1)
     2. block rating directly to the left (obstacle: -1, empty: 0, apple: 1)

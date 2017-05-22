@@ -121,14 +121,21 @@ data class C(val x: Int, val y: Int) {
 
     fun getRating(map: Array<IntArray>): Double = MapData.get(get(map)).rating
 
-    fun shift(right: Int, up: Int): C = C(x + right, y - up)
+    fun shift(right: Int, up: Int, direction: Directions = Directions.UP): C {
+        return when (direction) {
+            Directions.UP, Directions.NONE -> C(x + right, y - up)
+            Directions.RIGHT -> C(x + up, y + right)
+            Directions.DOWN -> C(x - right, y + up)
+            Directions.LEFT -> C(x - up, y - right)
+        }
+    }
 
     /**
      * Computes ((distance to C) - (distance to C after shift))/(distance to C)
      */
-    fun delta(reference: C, shiftX: Int, shiftY: Int): Double {
+    fun delta(reference: C, right: Int, up: Int, direction: Directions = Directions.UP): Double {
         val orig = distanceTo(reference)
-        val shifted = shift(shiftX, shiftY) distanceTo reference
+        val shifted = shift(right, up, direction) distanceTo reference
         return (orig - shifted) / orig
     }
 
