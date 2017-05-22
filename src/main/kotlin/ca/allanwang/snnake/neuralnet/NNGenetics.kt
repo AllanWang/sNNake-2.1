@@ -20,7 +20,6 @@ class NNGenetics(key: String,
                  val mutationsPerList: Int = 2, // Number of items to mutate per given weight set
                  val mutationIncrement: Double = 1e-3, // For increment mutations, max value to increment/decrement
                  val iterations: Int = 3, // Number of times to test a given weight before moving onto the next one
-                 crossPoints: IntArray = intArrayOf(2), // Joints to cross two parents when creating their children
                  generationCallback: ((Int, List<Double>, Double) -> Unit)? = null, // Callback function to receive generation update reports
                  val writeToFile: Boolean = true // Write population and best data to files
 ) {
@@ -39,15 +38,10 @@ class NNGenetics(key: String,
     private val rnd = java.util.Random()
     var dataIter: Iterator<List<Double>> = emptyList<List<Double>>().iterator()
     lateinit var bestData: Triple<List<Double>, Int, Double>
-    val crossPoints: IntArray
 
     init {
         val weightCount = net.weightCount
         if (mutationsPerList > weightCount) throw NNGeneticsException("Mutations per list ($mutationsPerList) exceeds weight count ($weightCount)")
-        val crossPointList = crossPoints.sortedArray().toMutableList()
-        if (crossPointList.first() < 0) throw NNGeneticsException("Crosspoints are indices and cannot be less than 0; cross ${crossPointList.first()} found")
-        if (crossPointList.first() != 0) crossPointList.add(0, 0)
-        this.crossPoints = crossPointList.toIntArray()
         if (iterations < 1) throw NNGeneticsException("iteration count should be at least 1; currently $iterations")
         if (populationSize < 2) throw NNGeneticsException("populationSize should be greater than 2; currently $populationSize")
         if (populationRetention < 0) throw NNGeneticsException("populationRetention should be greater than 0; currently $populationRetention")
@@ -59,35 +53,18 @@ class NNGenetics(key: String,
 
     /**
      * Given parents [first] & [second] of the same length
-     * As well as [crossPoints] ranging from 0 to first.size inclusive,
-     * Will generate a list of equal size by combining sublists of both parents based on the crossPoints, starting with the first parent
+     * Will generate a list of equal size by picking each element from each index with equal likelihood
      */
     internal fun crossover(first: List<Double>, second: List<Double>, verify: Boolean = false): MutableList<Double> {
         if (verify) {
             if (first.size != second.size) throw NNGeneticsException("Crossover parents do not have the same size: ${first.size}, ${second.size}")
             if (first.size != net.weightCount) throw NNGeneticsException("Crossover parent size does not match weight count: ${first.size}, ${net.weightCount}")
-            if (crossPoints.last() > first.size) throw NNGeneticsException("Crosspoints are indices and cannot exceed the max index of the parents; cross ${crossPoints.last()} found when parent size is ${first.size}")
         }
         val result = mutableListOf<Double>()
-        var pickFirst = true
-        for (i in 0..crossPoints.size - 2) {
-            val sub = (if (pickFirst) first else second).subList(crossPoints[i], crossPoints[i + 1])
-            result.addAll(sub)
-            pickFirst = !pickFirst
-        }
-        if (crossPoints.last() < first.size) {
-            val sub = (if (pickFirst) first else second).subList(crossPoints.last(), first.size)
-            result.addAll(sub)
-        }
+        for (i in 0 until first.size)
+            result.add((if (rnd.nextDouble() < 0.5) first else second)[i])
         return result
     }
-
-    /**
-     * Returns a pair of children from two parents, using the given [crossPoints]
-     * The first crossover starts with the first parent
-     * The second crossover starts with the second parent
-     */
-    internal fun breed(first: List<Double>, second: List<Double>): Pair<MutableList<Double>, MutableList<Double>> = Pair(crossover(first, second, true), crossover(second, first))
 
     /**
      * Given [list], will swap [mutationsPerList] number of items with numbers generated from [rand]
@@ -130,12 +107,10 @@ class NNGenetics(key: String,
             do {
                 second = best[rand(best)]
             } while (first == second)
-            val children = breed(first, second)
-            if (rnd.nextDouble() < mutationRate) mutate(children.first)
-            newPopulation.add(children.first)
-            if (rnd.nextDouble() < mutationRate) mutate(children.second)
-            newPopulation.add(children.second)
-            count += 2
+            val child = crossover(first, second)
+            if (rnd.nextDouble() < mutationRate) mutate(child)
+            newPopulation.add(child)
+            count += 1
         }
 
         if (writeToFile) {

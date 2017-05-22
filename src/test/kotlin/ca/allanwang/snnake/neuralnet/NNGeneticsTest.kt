@@ -17,7 +17,7 @@ class NNGeneticsTest {
 
     @Before
     fun init() {
-        nng = NNGenetics("NNGT", NeuralNet(1, 2, 2).setWeights(1, 2, 3, 4, 5, 6), crossPoints = intArrayOf(2, 4))
+        nng = NNGenetics("NNGT", NeuralNet(1, 2, 2).setWeights(1, 2, 3, 4, 5, 6))
         first = listOf(1.0, 3.0, 5.0, 7.0, 9.0, 11.0)
         second = listOf(2.0, 4.0, 6.0, 8.0, 10.0, 12.0)
     }
@@ -41,23 +41,6 @@ class NNGeneticsTest {
         val data = nng.readPopulation()
         assertEquals(1, data.size, "population file should only have one list")
         assertEquals(first, data.first(), "population file should have list we just wrote")
-    }
-
-    @Test
-    fun crossOver() {
-        val result = nng.crossover(first, second)
-        val error = "Crossover should alternate from first to second using crossPoints, from 0 to list.size"
-        assertEquals(first.subList(nng.crossPoints[0], nng.crossPoints[1]), result.subList(nng.crossPoints[0], nng.crossPoints[1]), error)
-        assertEquals(second.subList(nng.crossPoints[1], nng.crossPoints[2]), result.subList(nng.crossPoints[1], nng.crossPoints[2]), error)
-        assertEquals(first.subList(nng.crossPoints[2], first.size), result.subList(nng.crossPoints[2], first.size), error)
-    }
-
-    @Test
-    fun breed() {
-        val children = nng.breed(first, second)
-        val parentSum = List(first.size, { first[it] + second[it] })
-        val childSum = List(children.first.size, { children.first[it] + children.second[it] })
-        assertEquals(parentSum, childSum, "Child sum in breeding should equal parent sum")
     }
 
     @Test
